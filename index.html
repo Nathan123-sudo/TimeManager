@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>任务规划助手</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#5D5CDE',
+            secondary: '#6366F1',
+            success: '#10B981',
+            warning: '#F59E0B',
+            danger: '#EF4444',
+            background: {
+              light: '#FFFFFF',
+              dark: '#181818'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+  <div class="container mx-auto px-4 py-6 max-w-5xl">
+    <!-- App Header -->
+    <header class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+        <i class="ri-calendar-check-fill text-primary"></i>
+        <span>任务规划助手</span>
+      </h1>
+      <p class="text-gray-500 dark:text-gray-400 mt-1">高效管理您的任务和时间</p>
+    </header>
+
+    <!-- Main Navigation -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md mb-6 overflow-hidden">
+      <nav class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <button class="tab-btn active py-4 px-6 font-medium focus:outline-none" data-tab="dashboard">
+          <i class="ri-dashboard-line mr-2"></i>概览
+        </button>
+        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="tasks">
+          <i class="ri-task-line mr-2"></i>任务管理
+        </button>
+        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="calendar">
+          <i class="ri-calendar-line mr-2"></i>日历视图
+        </button>
+        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="checkin">
+          <i class="ri-clipboard-line mr-2"></i>每日打卡
+        </button>
+        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="settings">
+          <i class="ri-settings-line mr-2"></i>设置
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="dashboard">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Summary Card -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="ri-bar-chart-grouped-line text-primary mr-2"></i>
+            任务概览
+          </h2>
+          <div id="task-summary" class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span>总任务数</span>
+              <span id="total-tasks" class="font-bold">0</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>进行中</span>
+              <span id="active-tasks" class="font-bold text-primary">0</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>已完成</span>
+              <span id="completed-tasks" class="font-bold text-success">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Card -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="ri-time-line text-primary mr-2"></i>
+            完成进度
+          </h2>
+          <div id="progress-summary" class="space-y-3">
+            <div class="flex justify-between items-center text-sm">
+              <span>总计划时间</span>
+              <span id="total-hours" class="font-medium">0 小时</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+              <span>已完成时间</span>
+              <span id="completed-hours" class="font-medium">0 小时</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+              <div id="progress-bar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <div class="text-right text-xs text-gray-500 dark:text-gray-400">
+              <span id="progress-percentage">0%</span> 完成
+            </div>
+          </div>
+        </div>
+
+        <!-- Today Card -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="ri-calendar-event-line text-primary mr-2"></i>
+            今日任务
+          </h2>
+          <div id="today-tasks" class="space-y-3">
+            <p class="text-gray-500 dark:text-gray-400 text-sm">加载中...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Tasks -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold">近期任务</h2>
+          <button id="add-task-btn" class="text-primary hover:text-opacity-80 text-sm font-medium flex items-center">
+            <i class="ri-add-line mr-1"></i> 添加任务
+          </button>
+        </div>
+        <div id="recent-tasks" class="space-y-3">
+          <p class="text-gray-500 dark:text-gray-400 text-sm">加载中...</p>
+        </div>
+      </div>
+
+      <!-- Categories Overview -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold mb-4">任务分类统计</h2>
+        <div id="category-stats" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- Will be populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content hidden" id="tasks">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+        <div class="flex flex-wrap justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">所有任务</h2>
+          <div class="flex space-x-2 mt-2 sm:mt-0">
+            <div class="relative">
+              <select id="category-filter" class="appearance-none bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 pl-3 pr-10 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                <option value="">所有分类</option>
+                <option value="📚 论文任务">📚 论文任务</option>
+                <option value="📖 学习任务">📖 学习任务</option>
+                <option value="💪 健身任务">💪 健身任务</option>
+                <option value="📁 其他任务">📁 其他任务</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                <i class="ri-arrow-down-s-line text-gray-400"></i>
+              </div>
+            </div>
+            <div class="relative">
+              <select id="priority-filter" class="appearance-none bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 pl-3 pr-10 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                <option value="">所有优先级</option>
+                <option value="高">高优先级</option>
+                <option value="中">中优先级</option>
+                <option value="低">低优先级</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                <i class="ri-arrow-down-s-line text-gray-400"></i>
+              </div>
+            </div>
+            <button id="task-add-btn" class="bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-opacity-90 transition-colors">
+              <i class="ri-add-line mr-1"></i> 新建
+            </button>
+          </div>
+        </div>
+        
+        <div id="tasks-list" class="space-y-4">
+          <!-- Tasks will be populated here -->
+          <p class="text-gray-500 dark:text-gray-400 text-sm">加载中...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content hidden" id="calendar">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">日历视图</h2>
+          <div class="flex space-x-2">
+            <button id="prev-month" class="bg-gray-100 dark:bg-gray-700 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              <i class="ri-arrow-left-s-line"></i>
+            </button>
+            <button id="next-month" class="bg-gray-100 dark:bg-gray-700 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              <i class="ri-arrow-right-s-line"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div id="calendar-header" class="mb-4 text-center text-lg font-medium">
+          <!-- Month and year will be populated by JS -->
+        </div>
+
+        <div class="grid grid-cols-7 gap-2 mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div>周日</div>
+          <div>周一</div>
+          <div>周二</div>
+          <div>周三</div>
+          <div>周四</div>
+          <div>周五</div>
+          <div>周六</div>
+        </div>
+        
+        <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+          <!-- Calendar days will be populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content hidden" id="checkin">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+        <h2 class="text-lg font-bold mb-4">每日打卡</h2>
+        
+        <div class="mb-6">
+          <h3 class="font-medium mb-2 flex items-center">
+            <i class="ri-calendar-check-line text-primary mr-2"></i>
+            <span id="checkin-date"></span> 任务
+          </h3>
+          <div id="checkin-tasks" class="space-y-4 mt-4">
+            <!-- Today's tasks will be populated here -->
+            <p class="text-gray-500 dark:text-gray-400 text-sm">加载中...</p>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
+          <h3 class="font-medium mb-4 flex items-center">
+            <i class="ri-emotion-line text-primary mr-2"></i>
+            状态反馈
+          </h3>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">疲劳程度 (0-10)</label>
+              <div class="flex items-center space-x-4">
+                <input type="range" id="fatigue" min="0" max="10" value="5" 
+                  class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                <span id="fatigue-value" class="text-sm font-medium">5</span>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-2">情绪状态</label>
+              <select id="mood" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                <option value="😃 很开心">😃 很开心</option>
+                <option value="🙂 一般" selected>🙂 一般</option>
+                <option value="😩 累">😩 累</option>
+                <option value="😠 烦躁">😠 烦躁</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-2">备注 / 今日困难</label>
+              <textarea id="notes" rows="3" 
+                class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none"
+                placeholder="如：任务过重、无法集中等..."></textarea>
+            </div>
+            
+            <button id="save-feedback" class="w-full bg-primary text-white rounded-lg py-2 font-medium hover:bg-opacity-90 transition-colors">
+              提交反馈
+            </button>
+            <p id="feedback-status" class="text-center text-sm text-success hidden">反馈已保存</p>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <h3 class="font-medium mb-4 flex items-center">
+            <i class="ri-history-line text-primary mr-2"></i>
+            历史记录
+          </h3>
+          <button id="view-history" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            查看历史反馈
+          </button>
+          <div id="feedback-history" class="mt-4 space-y-4 hidden">
+            <!-- Will be populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content hidden" id="settings">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+        <h2 class="text-lg font-bold mb-6">设置</h2>
+        
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <span class="font-medium">深色模式</span>
+            <button id="theme-toggle" class="w-12 h-6 rounded-full bg-gray-200 dark:bg-primary relative">
+              <span class="toggle-circle absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform duration-300 transform dark:translate-x-6"></span>
+            </button>
+          </div>
+          
+          <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="font-medium mb-3">数据管理</h3>
+            <div class="flex flex-wrap gap-3">
+              <button id="export-data" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                导出数据
+              </button>
+              <button id="import-data" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                导入数据
+              </button>
+              <input type="file" id="import-file" accept=".json" class="hidden">
+            </div>
+          </div>
+          
+          <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="font-medium mb-3 text-danger">危险区域</h3>
+            <div class="space-y-3">
+              <button id="clear-completed" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors w-full text-left">
+                清除所有进度数据
+              </button>
+              <button id="clear-feedback" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors w-full text-left">
+                清除所有反馈记录
+              </button>
+              <button id="clear-all" class="bg-danger text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-opacity-90 transition-colors w-full text-left">
+                重置所有数据
+              </button>
+              <p id="settings-status" class="text-sm text-success hidden"></p>
+            </div>
+          </div>
+          
+          <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="font-medium mb-3">关于</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              任务规划助手 v1.0.0<br>
+              一个帮助您高效管理时间和任务的工具
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Task Modal -->
+    <div id="task-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+        <h3 id="modal-title" class="text-lg font-bold mb-4">添加新任务</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">任务名称</label>
+            <input id="task-name" type="text" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">开始日期</label>
+              <input id="task-start" type="date" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">结束日期</label>
+              <input id="task-end" type="date" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">预计总小时数</label>
+            <input id="task-hours" type="number" min="0.1" step="0.1" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">每日开始时间</label>
+              <input id="task-start-time" type="time" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">每日结束时间</label>
+              <input id="task-end-time" type="time" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">任务分类</label>
+              <select id="task-category" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                <option value="📚 论文任务">📚 论文任务</option>
+                <option value="📖 学习任务">📖 学习任务</option>
+                <option value="💪 健身任务">💪 健身任务</option>
+                <option value="📁 其他任务" selected>📁 其他任务</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">优先级</label>
+              <select id="task-priority" class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                <option value="高">🔥 高</option>
+                <option value="中" selected>⚡ 中</option>
+                <option value="低">🌱 低</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3 mt-6">
+          <button id="modal-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            取消
+          </button>
+          <button id="modal-save" class="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors">
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Details Modal -->
+    <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+        <div class="flex justify-between items-start mb-4">
+          <h3 id="details-title" class="text-lg font-bold pr-6"></h3>
+          <button id="details-close" class="text-gray-400 hover:text-gray-500">
+            <i class="ri-close-line text-xl"></i>
+          </button>
+        </div>
+        
+        <div id="details-content" class="space-y-4">
+          <!-- Will be populated by JS -->
+        </div>
+        
+        <div class="flex justify-end space-x-3 mt-6">
+          <button id="details-delete" class="px-4 py-2 text-sm font-medium bg-danger text-white rounded-lg hover:bg-opacity-90 transition-colors">
+            删除
+          </button>
+          <button id="details-edit" class="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors">
+            编辑
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <h3 class="text-lg font-bold mb-3">确认操作</h3>
+        <p id="confirm-message" class="mb-6 text-gray-600 dark:text-gray-300"></p>
+        
+        <div class="flex justify-end space-x-3">
+          <button id="confirm-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            取消
+          </button>
+          <button id="confirm-ok" class="px-4 py-2 text-sm font-medium bg-danger text-white rounded-lg hover:bg-opacity-90 transition-colors">
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize dark mode
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+    
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+      if (event.matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    });
+
+    // Data model
+    const DataStore = {
+      // Storage keys
+      TASKS_KEY: 'tasks',
+      COMPLETED_HOURS_KEY: 'completedHours',
+      FEEDBACK_KEY: 'dailyFeedback',
+      
+      // Storage wrapper with error handling
+      store(key, data) {
+        try {
+          const stringData = JSON.stringify(data);
+          localStorage.setItem(key, stringData);
+          return true;
+        } catch (error) {
+          console.error(`Error storing data for ${key}:`, error);
+          
+          // Show user-friendly error
+          UI.showNotification('存储数据时出错，可能是由于存储空间不足', 'error');
+          return false;
+        }
+      },
+      
+      retrieve(key, defaultValue = null) {
+        try {
+          const data = localStorage.getItem(key);
+          return data ? JSON.parse(data) : defaultValue;
+        } catch (error) {
+          console.error(`Error retrieving data for ${key}:`, error);
+          return defaultValue;
+        }
+      },
+      
+      // Task operations
+      getTasks() {
+        return this.retrieve(this.TASKS_KEY, []);
+      },
+      
+      saveTask(task) {
+        const tasks = this.getTasks();
+        const existingIndex = tasks.findIndex(t => t.name === task.name);
+        
+        if (existingIndex >= 0) {
+          tasks[existingIndex] = task;
+        } else {
+          tasks.push(task);
+        }
+        
+        return this.store(this.TASKS_KEY, tasks);
+      },
+      
+      deleteTask(taskName) {
+        const tasks = this.getTasks();
+        const filtered = tasks.filter(t => t.name !== taskName);
+        return this.store(this.TASKS_KEY, filtered);
+      },
+      
+      // Completed hours operations
+      getCompletedHours() {
+        return this.retrieve(this.COMPLETED_HOURS_KEY, {});
+      },
+      
+      updateTaskProgress(taskId, hours) {
+        const completed = this.getCompletedHours();
+        completed[taskId] = parseFloat(hours);
+        return this.store(this.COMPLETED_HOURS_KEY, completed);
+      },
+      
+      // Feedback operations
+      saveFeedback(date, data) {
+        const feedback = this.retrieve(this.FEEDBACK_KEY, {});
+        feedback[date] = data;
+        return this.store(this.FEEDBACK_KEY, feedback);
+      },
+      
+      getFeedback() {
+        return this.retrieve(this.FEEDBACK_KEY, {});
+      },
+      
+      // Data management
+      exportData() {
+        return {
+          tasks: this.getTasks(),
+          completedHours: this.getCompletedHours(),
+          feedback: this.getFeedback(),
+          exportDate: new Date().toISOString()
+        };
+      },
+      
+      importData(data) {
+        try {
+          if (data.tasks) this.store(this.TASKS_KEY, data.tasks);
+          if (data.completedHours) this.store(this.COMPLETED_HOURS_KEY, data.completedHours);
+          if (data.feedback) this.store(this.FEEDBACK_KEY, data.feedback);
+          return true;
+        } catch (error) {
+          console.error('Error importing data:', error);
+          return false;
+        }
+      },
+      
+      clearAllData() {
+        localStorage.clear();
+      },
+      
+      clearCompletedHours() {
+        localStorage.removeItem(this.COMPLETED_HOURS_KEY);
+      },
+      
+      clearFeedback() {
+        localStorage.removeItem(this.FEEDBACK_KEY);
+      }
+    };
+
+    // Task scheduling logic
+    const TaskScheduler = {
+      scheduleTasks(tasks) {
+        const schedule = {};
+        
+        tasks.forEach(task => {
+          const start = new Date(task.start);
+          const end = new Date(task.end);
+          
+          // Calculate days between dates
+          const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          const dailyHours = (task.estimatedHours / days).toFixed(1);
+          
+          for (let i = 0; i < days; i++) {
+            const date = new Date(start);
+            date.setDate(date.getDate() + i);
+            const dateStr = date.toISOString().split("T")[0];
+            
+            if (!schedule[dateStr]) schedule[dateStr] = [];
+            
+            schedule[dateStr].push({
+              name: task.name,
+              hours: dailyHours,
+              category: task.category || "📁 其他任务",
+              priority: task.priority || "中",
+              timeRange: task.timeRange || ["?", "?"]
+            });
+          }
+        });
+        
+        return schedule;
+      },
+      
+      getFilteredSchedule(tasks, filters = {}) {
+        const allSchedule = this.scheduleTasks(tasks);
+        
+        if (!filters.category && !filters.priority) {
+          return allSchedule;
+        }
+        
+        const filteredSchedule = {};
+        
+        Object.keys(allSchedule).forEach(date => {
+          const filteredTasks = allSchedule[date].filter(task => {
+            let match = true;
+            
+            if (filters.category && task.category !== filters.category) {
+              match = false;
+            }
+            
+            if (filters.priority && task.priority !== filters.priority) {
+              match = false;
+            }
+            
+            return match;
+          });
+          
+          if (filteredTasks.length > 0) {
+            filteredSchedule[date] = filteredTasks;
+          }
+        });
+        
+        return filteredSchedule;
+      },
+      
+      // Get today's tasks
+      getTodayTasks(tasks) {
+        const today = new Date().toISOString().split("T")[0];
+        const schedule = this.scheduleTasks(tasks);
+        return schedule[today] || [];
+      },
+      
+      // Calculate task stats
+      getTaskStats(tasks) {
+        const now = new Date();
+        const todayStr = now.toISOString().split("T")[0];
+        
+        let activeTasks = 0;
+        let completedTasks = 0;
+        
+        tasks.forEach(task => {
+          const start = new Date(task.start);
+          const end = new Date(task.end);
+          
+          // Task is completed if end date is in the past
+          if (end < now) {
+            completedTasks++;
+          } 
+          // Task is active if today is between start and end dates
+          else if (start <= now && end >= now) {
+            activeTasks++;
+          }
+        });
+        
+        return {
+          total: tasks.length,
+          active: activeTasks,
+          completed: completedTasks
+        };
+      },
+      
+      // Calculate progress statistics
+      getProgressStats(tasks, completedHours) {
+        let totalHours = 0;
+        let completedTotal = 0;
+        
+        const schedule = this.scheduleTasks(tasks);
+        
+        Object.keys(schedule).forEach(date => {
+          schedule[date].forEach(item => {
+            const taskId = `${date}-${item.name}`;
+            const itemHours = parseFloat(item.hours);
+            
+            totalHours += itemHours;
+            completedTotal += Math.min(parseFloat(completedHours[taskId] || 0), itemHours);
+          });
+        });
+        
+        const percentage = totalHours > 0 ? Math.round((completedTotal / totalHours) * 100) : 0;
+        
+        return {
+          total: totalHours.toFixed(1),
+          completed: completedTotal.toFixed(1),
+          percentage
+        };
+      },
+      
+      // Get category statistics
+      getCategoryStats(tasks) {
+        const categories = {};
+        
+        tasks.forEach(task => {
+          const category = task.category || "📁 其他任务";
+          
+          if (!categories[category]) {
+            categories[category] = {
+              count: 0,
+              hours: 0
+            };
+          }
+          
+          categories[category].count++;
+          categories[category].hours += parseFloat(task.estimatedHours || 0);
+        });
+        
+        return categories;
+      }
+    };
+
+    // UI Controller
+    const UI = {
+      // State
+      currentTab: 'dashboard',
+      currentMonth: new Date().getMonth(),
+      currentYear: new Date().getFullYear(),
+      editingTask: null,
+      
+      // Initialize the UI
+      init() {
+        this.setupTabNavigation();
+        this.setupEventListeners();
+        this.renderDashboard();
+        this.setTodayInCheckin();
+      },
+      
+      // Setup tab navigation
+      setupTabNavigation() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(b => {
+              b.classList.remove('active', 'text-primary', 'border-b-2', 'border-primary');
+            });
+            
+            // Add active class to clicked tab
+            btn.classList.add('active', 'text-primary', 'border-b-2', 'border-primary');
+            
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+              content.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            const tabId = btn.getAttribute('data-tab');
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            this.currentTab = tabId;
+            
+            // Update content based on tab
+            if (tabId === 'dashboard') this.renderDashboard();
+            if (tabId === 'tasks') this.renderTasksList();
+            if (tabId === 'calendar') this.renderCalendar();
+            if (tabId === 'checkin') this.renderCheckin();
+          });
+        });
+      },
+      
+      // Setup all event listeners
+      setupEventListeners() {
+        // Task modal events
+        document.getElementById('add-task-btn').addEventListener('click', () => this.openTaskModal());
+        document.getElementById('task-add-btn').addEventListener('click', () => this.openTaskModal());
+        document.getElementById('modal-cancel').addEventListener('click', () => this.closeTaskModal());
+        document.getElementById('modal-save').addEventListener('click', () => this.saveTask());
+        
+        // Details modal events
+        document.getElementById('details-close').addEventListener('click', () => this.closeDetailsModal());
+        document.getElementById('details-edit').addEventListener('click', () => {
+          const taskName = document.getElementById('details-title').textContent;
+          this.closeDetailsModal();
+          this.openTaskModal(taskName);
+        });
+        document.getElementById('details-delete').addEventListener('click', () => {
+          const taskName = document.getElementById('details-title').textContent;
+          this.closeDetailsModal();
+          this.openConfirmModal(
+            `确定要删除任务 "${taskName}" 吗？此操作不可撤销。`, 
+            () => {
+              DataStore.deleteTask(taskName);
+              this.renderAll();
+              this.showNotification('任务已删除', 'success');
+            }
+          );
+        });
+        
+        // Confirm modal events
+        document.getElementById('confirm-cancel').addEventListener('click', () => this.closeConfirmModal());
+        
+        // Category and priority filters
+        document.getElementById('category-filter').addEventListener('change', () => this.renderTasksList());
+        document.getElementById('priority-filter').addEventListener('change', () => this.renderTasksList());
+        
+        // Calendar navigation
+        document.getElementById('prev-month').addEventListener('click', () => this.changeMonth(-1));
+        document.getElementById('next-month').addEventListener('click', () => this.changeMonth(1));
+        
+        // Checkin page
+        document.getElementById('fatigue').addEventListener('input', e => {
+          document.getElementById('fatigue-value').textContent = e.target.value;
+        });
+        
+        document.getElementById('save-feedback').addEventListener('click', () => this.saveFeedback());
+        document.getElementById('view-history').addEventListener('click', () => this.toggleFeedbackHistory());
+        
+        // Settings page
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+          document.documentElement.classList.toggle('dark');
+        });
+        
+        document.getElementById('export-data').addEventListener('click', () => this.exportData());
+        document.getElementById('import-data').addEventListener('click', () => {
+          document.getElementById('import-file').click();
+        });
+        
+        document.getElementById('import-file').addEventListener('change', (e) => {
+          this.importData(e.target.files[0]);
+        });
+        
+        document.getElementById('clear-completed').addEventListener('click', () => {
+          this.openConfirmModal(
+            '确定要清除所有任务进度数据吗？此操作不可撤销。',
+            () => {
+              DataStore.clearCompletedHours();
+              this.renderAll();
+              this.showSettingsStatus('进度数据已清除');
+            }
+          );
+        });
+        
+        document.getElementById('clear-feedback').addEventListener('click', () => {
+          this.openConfirmModal(
+            '确定要清除所有反馈记录吗？此操作不可撤销。',
+            () => {
+              DataStore.clearFeedback();
+              this.renderAll();
+              this.showSettingsStatus('反馈记录已清除');
+            }
+          );
+        });
+        
+        document.getElementById('clear-all').addEventListener('click', () => {
+          this.openConfirmModal(
+            '确定要重置所有数据吗？这将删除所有任务、进度和反馈记录。此操作不可撤销。',
+            () => {
+              DataStore.clearAllData();
+              this.renderAll();
+              this.showSettingsStatus('所有数据已重置');
+            }
+          );
+        });
+      },
+      
+      // Render all sections
+      renderAll() {
+        this.renderDashboard();
+        this.renderTasksList();
+        this.renderCalendar();
+        this.renderCheckin();
+      },
+      
+      // Dashboard rendering
+      renderDashboard() {
+        const tasks = DataStore.getTasks();
+        const completedHours = DataStore.getCompletedHours();
+        
+        // Update task stats
+        const stats = TaskScheduler.getTaskStats(tasks);
+        document.getElementById('total-tasks').textContent = stats.total;
+        document.getElementById('active-tasks').textContent = stats.active;
+        document.getElementById('completed-tasks').textContent = stats.completed;
+        
+        // Update progress stats
+        const progress = TaskScheduler.getProgressStats(tasks, completedHours);
+        document.getElementById('total-hours').textContent = `${progress.total} 小时`;
+        document.getElementById('completed-hours').textContent = `${progress.completed} 小时`;
+        document.getElementById('progress-bar').style.width = `${progress.percentage}%`;
+        document.getElementById('progress-percentage').textContent = `${progress.percentage}%`;
+        
+        // Update today's tasks
+        const todayTasks = TaskScheduler.getTodayTasks(tasks);
+        const todayContainer = document.getElementById('today-tasks');
+        
+        if (todayTasks.length > 0) {
+          todayContainer.innerHTML = '';
+          
+          todayTasks.forEach(task => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700';
+            
+            let priorityColor = 'text-gray-500';
+            if (task.priority === '高') priorityColor = 'text-danger';
+            else if (task.priority === '中') priorityColor = 'text-warning';
+            else if (task.priority === '低') priorityColor = 'text-success';
+            
+            taskEl.innerHTML = `
+              <div>
+                <div class="flex items-center">
+                  <span class="${priorityColor} mr-2">
+                    ${task.priority === '高' ? '🔥' : task.priority === '中' ? '⚡' : '🌱'}
+                  </span>
+                  <span class="font-medium">${task.name}</span>
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  ${task.timeRange[0]}~${task.timeRange[1]} · ${task.hours}小时
+                </div>
+              </div>
+              <div class="flex items-center">
+                <button class="text-primary hover:text-opacity-80 p-1 view-task-btn" data-task="${task.name}">
+                  <i class="ri-eye-line"></i>
+                </button>
+              </div>
+            `;
+            
+            taskEl.querySelector('.view-task-btn').addEventListener('click', () => {
+              this.openDetailsModal(task.name);
+            });
+            
+            todayContainer.appendChild(taskEl);
+          });
+        } else {
+          todayContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">今天没有安排任务</p>';
+        }
+        
+        // Update recent tasks
+        const recentContainer = document.getElementById('recent-tasks');
+        
+        if (tasks.length > 0) {
+          // Sort tasks by start date (most recent first)
+          const sortedTasks = [...tasks].sort((a, b) => new Date(b.start) - new Date(a.start));
+          const recentTasks = sortedTasks.slice(0, 5); // Get 5 most recent tasks
+          
+          recentContainer.innerHTML = '';
+          
+          recentTasks.forEach(task => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer';
+            
+            let priorityColor = 'text-gray-500';
+            if (task.priority === '高') priorityColor = 'text-danger';
+            else if (task.priority === '中') priorityColor = 'text-warning';
+            else if (task.priority === '低') priorityColor = 'text-success';
+            
+            const now = new Date();
+            const start = new Date(task.start);
+            const end = new Date(task.end);
+            
+            let status = 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+            let statusText = '未开始';
+            
+            if (now > end) {
+              status = 'bg-success bg-opacity-10 text-success';
+              statusText = '已完成';
+            } else if (now >= start) {
+              status = 'bg-primary bg-opacity-10 text-primary';
+              statusText = '进行中';
+            }
+            
+            taskEl.innerHTML = `
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="${priorityColor} mr-2">
+                    ${task.priority === '高' ? '🔥' : task.priority === '中' ? '⚡' : '🌱'}
+                  </span>
+                  <span class="font-medium">${task.name}</span>
+                  <span class="ml-3 text-xs px-2 py-0.5 rounded-full ${status}">
+                    ${statusText}
+                  </span>
+                </div>
+                <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                  <span class="mr-3">${task.category}</span>
+                  <span>${task.start} ~ ${task.end}</span>
+                </div>
+              </div>
+              <i class="ri-arrow-right-s-line text-gray-400"></i>
+            `;
+            
+            taskEl.addEventListener('click', () => {
+              this.openDetailsModal(task.name);
+            });
+            
+            recentContainer.appendChild(taskEl);
+          });
+        } else {
+          recentContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">暂无任务，点击"添加任务"开始</p>';
+        }
+        
+        // Update category stats
+        const categoryStats = TaskScheduler.getCategoryStats(tasks);
+        const categoryContainer = document.getElementById('category-stats');
+        
+        if (Object.keys(categoryStats).length > 0) {
+          categoryContainer.innerHTML = '';
+          
+          Object.keys(categoryStats).forEach(category => {
+            const stats = categoryStats[category];
+            const categoryEl = document.createElement('div');
+            categoryEl.className = 'p-4 bg-gray-50 dark:bg-gray-700 rounded-xl';
+            
+            categoryEl.innerHTML = `
+              <h3 class="font-medium mb-2">${category}</h3>
+              <div class="text-2xl font-bold mb-1">${stats.count}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">${stats.hours.toFixed(1)} 小时</div>
+            `;
+            
+            categoryContainer.appendChild(categoryEl);
+          });
+        } else {
+          categoryContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm col-span-full">暂无任务分类数据</p>';
+        }
+      },
+      
+      // Tasks list rendering
+      renderTasksList() {
+        const tasks = DataStore.getTasks();
+        const completedHours = DataStore.getCompletedHours();
+        
+        // Get filter values
+        const categoryFilter = document.getElementById('category-filter').value;
+        const priorityFilter = document.getElementById('priority-filter').value;
+        
+        // Filter tasks
+        let filteredTasks = [...tasks];
+        
+        if (categoryFilter) {
+          filteredTasks = filteredTasks.filter(task => task.category === categoryFilter);
+        }
+        
+        if (priorityFilter) {
+          filteredTasks = filteredTasks.filter(task => task.priority === priorityFilter);
+        }
+        
+        // Sort tasks by start date (newest first)
+        filteredTasks.sort((a, b) => new Date(b.start) - new Date(a.start));
+        
+        const tasksContainer = document.getElementById('tasks-list');
+        
+        if (filteredTasks.length > 0) {
+          tasksContainer.innerHTML = '';
+          
+          filteredTasks.forEach(task => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'bg-gray-50 dark:bg-gray-700 rounded-xl p-4';
+            
+            let priorityColor = 'text-gray-500';
+            if (task.priority === '高') priorityColor = 'text-danger';
+            else if (task.priority === '中') priorityColor = 'text-warning';
+            else if (task.priority === '低') priorityColor = 'text-success';
+            
+            const now = new Date();
+            const start = new Date(task.start);
+            const end = new Date(task.end);
+            const totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            const elapsedDays = Math.max(0, Math.min(Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1, totalDays));
+            const timeProgress = Math.round((elapsedDays / totalDays) * 100);
+            
+            // Calculate task completion percentage
+            let totalTaskHours = 0;
+            let completedTaskHours = 0;
+            
+            const schedule = TaskScheduler.scheduleTasks([task]);
+            
+            Object.keys(schedule).forEach(date => {
+              schedule[date].forEach(item => {
+                const taskId = `${date}-${item.name}`;
+                const hours = parseFloat(item.hours);
+                totalTaskHours += hours;
+                completedTaskHours += Math.min(parseFloat(completedHours[taskId] || 0), hours);
+              });
+            });
+            
+            const completionPercentage = totalTaskHours > 0 ? Math.round((completedTaskHours / totalTaskHours) * 100) : 0;
+            
+            let status = 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+            let statusText = '未开始';
+            
+            if (now > end) {
+              status = 'bg-success bg-opacity-10 text-success';
+              statusText = '已完成';
+            } else if (now >= start) {
+              status = 'bg-primary bg-opacity-10 text-primary';
+              statusText = '进行中';
+            }
+            
+            taskEl.innerHTML = `
+              <div class="flex flex-wrap justify-between items-start mb-3">
+                <div>
+                  <div class="flex items-center mb-1">
+                    <span class="${priorityColor} mr-2">
+                      ${task.priority === '高' ? '🔥' : task.priority === '中' ? '⚡' : '🌱'}
+                    </span>
+                    <h3 class="font-bold">${task.name}</h3>
+                    <span class="ml-3 text-xs px-2 py-0.5 rounded-full ${status}">
+                      ${statusText}
+                    </span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">
+                    ${task.category} · 每日 ${task.timeRange[0]}~${task.timeRange[1]}
+                  </div>
+                </div>
+                <div class="flex space-x-2 mt-2 sm:mt-0">
+                  <button class="text-gray-500 hover:text-primary p-1 view-task-btn" data-task="${task.name}">
+                    <i class="ri-eye-line"></i>
+                  </button>
+                  <button class="text-gray-500 hover:text-primary p-1 edit-task-btn" data-task="${task.name}">
+                    <i class="ri-edit-line"></i>
+                  </button>
+                  <button class="text-gray-500 hover:text-danger p-1 delete-task-btn" data-task="${task.name}">
+                    <i class="ri-delete-bin-line"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                <div>
+                  <div class="flex justify-between text-xs mb-1">
+                    <span>时间进度</span>
+                    <span>${timeProgress}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                    <div class="bg-primary h-1.5 rounded-full" style="width: ${timeProgress}%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs mb-1">
+                    <span>完成进度</span>
+                    <span>${completionPercentage}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                    <div class="bg-success h-1.5 rounded-full" style="width: ${completionPercentage}%"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                <span>${task.start}</span>
+                <span class="mx-2">-</span>
+                <span>${task.end}</span>
+                <span class="mx-2">·</span>
+                <span>总计 ${task.estimatedHours} 小时</span>
+              </div>
+            `;
+            
+            // Add event listeners
+            taskEl.querySelector('.view-task-btn').addEventListener('click', () => {
+              this.openDetailsModal(task.name);
+            });
+            
+            taskEl.querySelector('.edit-task-btn').addEventListener('click', () => {
+              this.openTaskModal(task.name);
+            });
+            
+            taskEl.querySelector('.delete-task-btn').addEventListener('click', () => {
+              this.openConfirmModal(
+                `确定要删除任务 "${task.name}" 吗？此操作不可撤销。`,
+                () => {
+                  DataStore.deleteTask(task.name);
+                  this.renderAll();
+                  this.showNotification('任务已删除', 'success');
+                }
+              );
+            });
+            
+            tasksContainer.appendChild(taskEl);
+          });
+        } else {
+          tasksContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">没有符合条件的任务</p>';
+        }
+      },
+      
+      // Calendar rendering
+      renderCalendar() {
+        const tasks = DataStore.getTasks();
+        const schedule = TaskScheduler.scheduleTasks(tasks);
+        
+        // Update calendar header
+        const months = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+        document.getElementById('calendar-header').textContent = `${months[this.currentMonth]} ${this.currentYear}`;
+        
+        // Generate calendar grid
+        const calendarGrid = document.getElementById('calendar-grid');
+        calendarGrid.innerHTML = '';
+        
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+        const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDay = firstDay.getDay(); // 0 (Sunday) to 6 (Saturday)
+        
+        // Add empty cells for days before the first day of the month
+        for (let i = 0; i < startingDay; i++) {
+          const emptyCell = document.createElement('div');
+          emptyCell.className = 'rounded-lg h-24 bg-gray-50 dark:bg-gray-800 opacity-50';
+          calendarGrid.appendChild(emptyCell);
+        }
+        
+        // Add cells for each day of the month
+        const today = new Date();
+        const todayDateStr = today.toISOString().split('T')[0];
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(this.currentYear, this.currentMonth, day);
+          const dateStr = date.toISOString().split('T')[0];
+          const isToday = dateStr === todayDateStr;
+          
+          const dayTasks = schedule[dateStr] || [];
+          
+          const cell = document.createElement('div');
+          cell.className = `rounded-lg p-2 h-24 overflow-hidden ${isToday 
+            ? 'bg-primary bg-opacity-10 border border-primary' 
+            : 'bg-white dark:bg-gray-800'} shadow-sm`;
+          
+          const dayHeader = document.createElement('div');
+          dayHeader.className = 'flex justify-between items-center mb-1';
+          
+          const dayNum = document.createElement('span');
+          dayNum.className = `font-bold ${isToday ? 'text-primary' : ''}`;
+          dayNum.textContent = day;
+          
+          const taskCount = document.createElement('span');
+          if (dayTasks.length > 0) {
+            taskCount.className = 'text-xs px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700';
+            taskCount.textContent = dayTasks.length;
+          }
+          
+          dayHeader.appendChild(dayNum);
+          dayHeader.appendChild(taskCount);
+          cell.appendChild(dayHeader);
+          
+          // Add task indicators
+          const taskContainer = document.createElement('div');
+          taskContainer.className = 'space-y-1';
+          
+          dayTasks.slice(0, 3).forEach(task => {
+            const taskIndicator = document.createElement('div');
+            taskIndicator.className = 'truncate text-xs';
+            
+            let priorityColor = '';
+            if (task.priority === '高') priorityColor = 'text-danger';
+            else if (task.priority === '中') priorityColor = 'text-warning';
+            else if (task.priority === '低') priorityColor = 'text-success';
+            
+            const priorityDot = document.createElement('span');
+            priorityDot.className = `inline-block w-2 h-2 rounded-full mr-1 ${priorityColor.replace('text-', 'bg-')}`;
+            
+            taskIndicator.appendChild(priorityDot);
+            taskIndicator.appendChild(document.createTextNode(task.name));
+            
+            taskContainer.appendChild(taskIndicator);
+          });
+          
+          if (dayTasks.length > 3) {
+            const moreIndicator = document.createElement('div');
+            moreIndicator.className = 'text-xs text-gray-500 dark:text-gray-400';
+            moreIndicator.textContent = `+${dayTasks.length - 3} 更多`;
+            taskContainer.appendChild(moreIndicator);
+          }
+          
+          cell.appendChild(taskContainer);
+          
+          // Add click event to show tasks for the day
+          if (dayTasks.length > 0) {
+            cell.addEventListener('click', () => {
+              this.showDayTasks(dateStr, dayTasks);
+            });
+            cell.style.cursor = 'pointer';
+          }
+          
+          calendarGrid.appendChild(cell);
+        }
+      },
+      
+      // Change calendar month
+      changeMonth(delta) {
+        this.currentMonth += delta;
+        
+        if (this.currentMonth < 0) {
+          this.currentMonth = 11;
+          this.currentYear--;
+        } else if (this.currentMonth > 11) {
+          this.currentMonth = 0;
+          this.currentYear++;
+        }
+        
+        this.renderCalendar();
+      },
+      
+      // Show tasks for a specific day
+      showDayTasks(date, tasks) {
+        // Create a modal showing all tasks for the day
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+        
+        const modalContent = document.createElement('div');
+        modalContent.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4';
+        
+        const header = document.createElement('div');
+        header.className = 'flex justify-between items-start mb-4';
+        
+        const title = document.createElement('h3');
+        title.className = 'text-lg font-bold';
+        title.textContent = `${date} 的任务`;
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'text-gray-400 hover:text-gray-500';
+        closeBtn.innerHTML = '<i class="ri-close-line text-xl"></i>';
+        closeBtn.addEventListener('click', () => {
+          document.body.removeChild(modal);
+        });
+        
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+        modalContent.appendChild(header);
+        
+        const tasksList = document.createElement('div');
+        tasksList.className = 'space-y-3';
+        
+        tasks.forEach(task => {
+          const taskItem = document.createElement('div');
+          taskItem.className = 'flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg';
+          
+          let priorityColor = 'text-gray-500';
+          if (task.priority === '高') priorityColor = 'text-danger';
+          else if (task.priority === '中') priorityColor = 'text-warning';
+          else if (task.priority === '低') priorityColor = 'text-success';
+          
+          taskItem.innerHTML = `
+            <div>
+              <div class="flex items-center">
+                <span class="${priorityColor} mr-2">
+                  ${task.priority === '高' ? '🔥' : task.priority === '中' ? '⚡' : '🌱'}
+                </span>
+                <span class="font-medium">${task.name}</span>
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                ${task.timeRange[0]}~${task.timeRange[1]} · ${task.hours}小时
+              </div>
+            </div>
+            <button class="view-day-task text-primary" data-task="${task.name}">
+              <i class="ri-eye-line"></i>
+            </button>
+          `;
+          
+          tasksList.appendChild(taskItem);
+        });
+        
+        modalContent.appendChild(tasksList);
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add event listeners to view task buttons
+        modal.querySelectorAll('.view-day-task').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const taskName = btn.getAttribute('data-task');
+            document.body.removeChild(modal);
+            this.openDetailsModal(taskName);
+          });
+        });
+      },
+      
+      // Checkin page
+      setTodayInCheckin() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('checkin-date').textContent = today;
+      },
+      
+      renderCheckin() {
+        const tasks = DataStore.getTasks();
+        const completedHours = DataStore.getCompletedHours();
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Get today's tasks
+        const todayTasks = TaskScheduler.getTodayTasks(tasks);
+        const tasksContainer = document.getElementById('checkin-tasks');
+        
+        if (todayTasks.length > 0) {
+          tasksContainer.innerHTML = '';
+          
+          todayTasks.forEach(task => {
+            const taskId = `${today}-${task.name}`;
+            const done = parseFloat(completedHours[taskId] || 0);
+            const total = parseFloat(task.hours);
+            const percent = Math.min(100, Math.round((done / total) * 100));
+            
+            let priorityColor = 'text-gray-500';
+            if (task.priority === '高') priorityColor = 'text-danger';
+            else if (task.priority === '中') priorityColor = 'text-warning';
+            else if (task.priority === '低') priorityColor = 'text-success';
+            
+            const taskEl = document.createElement('div');
+            taskEl.className = 'bg-gray-50 dark:bg-gray-700 rounded-lg p-4';
+            
+            taskEl.innerHTML = `
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <div class="flex items-center">
+                    <span class="${priorityColor} mr-2">
+                      ${task.priority === '高' ? '🔥' : task.priority === '中' ? '⚡' : '🌱'}
+                    </span>
+                    <span class="font-medium">${task.name}</span>
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    ${task.timeRange[0]}~${task.timeRange[1]} · ${task.category}
+                  </div>
+                </div>
+                <div class="text-sm">
+                  <span class="font-medium">${done}</span>/<span>${total}</span> 小时
+                </div>
+              </div>
+              
+              <div class="flex items-center space-x-3">
+                <div class="flex-1">
+                  <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div class="bg-primary h-2 rounded-full" style="width: ${percent}%"></div>
+                  </div>
+                </div>
+                <input type="number" 
+                  class="w-16 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-1 px-2 text-center text-base" 
+                  min="0" max="${total}" step="0.1" value="${done}"
+                  data-task-id="${taskId}" data-max="${total}">
+              </div>
+            `;
+            
+            // Add event listener for progress input
+            const input = taskEl.querySelector('input');
+            input.addEventListener('change', (e) => {
+              const taskId = e.target.getAttribute('data-task-id');
+              const max = parseFloat(e.target.getAttribute('data-max'));
+              let value = parseFloat(e.target.value);
+              
+              // Clamp value
+              value = Math.max(0, Math.min(value, max));
+              e.target.value = value;
+              
+              // Update storage
+              DataStore.updateTaskProgress(taskId, value);
+              this.renderCheckin();
+              this.renderDashboard();
+            });
+            
+            tasksContainer.appendChild(taskEl);
+          });
+        } else {
+          tasksContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">今天没有安排任务</p>';
+        }
+        
+        // Check if there's saved feedback for today
+        const feedback = DataStore.getFeedback();
+        if (feedback[today]) {
+          document.getElementById('fatigue').value = feedback[today].fatigue;
+          document.getElementById('fatigue-value').textContent = feedback[today].fatigue;
+          document.getElementById('mood').value = feedback[today].mood;
+          document.getElementById('notes').value = feedback[today].notes;
+          
+          document.getElementById('feedback-status').textContent = '今日反馈已保存';
+          document.getElementById('feedback-status').classList.remove('hidden');
+        } else {
+          document.getElementById('feedback-status').classList.add('hidden');
+        }
+      },
+      
+      saveFeedback() {
+        const today = new Date().toISOString().split('T')[0];
+        const data = {
+          fatigue: document.getElementById('fatigue').value,
+          mood: document.getElementById('mood').value,
+          notes: document.getElementById('notes').value,
+          timestamp: new Date().toISOString()
+        };
+        
+        DataStore.saveFeedback(today, data);
+        
+        document.getElementById('feedback-status').textContent = '反馈已保存';
+        document.getElementById('feedback-status').classList.remove('hidden');
+        
+        // Hide status after 3 seconds
+        setTimeout(() => {
+          document.getElementById('feedback-status').classList.add('hidden');
+        }, 3000);
+      },
+      
+      toggleFeedbackHistory() {
+        const historyContainer = document.getElementById('feedback-history');
+        
+        if (historyContainer.classList.contains('hidden')) {
+          // Show history
+          historyContainer.classList.remove('hidden');
+          document.getElementById('view-history').textContent = '隐藏历史反馈';
+          
+          // Populate history
+          const feedback = DataStore.getFeedback();
+          const dates = Object.keys(feedback).sort().reverse();
+          
+          if (dates.length > 0) {
+            historyContainer.innerHTML = '';
+            
+            dates.slice(0, 7).forEach(date => {
+              const entry = feedback[date];
+              const card = document.createElement('div');
+              card.className = 'bg-gray-50 dark:bg-gray-700 rounded-lg p-4';
+              
+              card.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                  <strong>${date}</strong>
+                  <span class="text-sm">${entry.mood}</span>
+                </div>
+                <div class="text-sm mb-2">疲劳程度: <span class="font-medium">${entry.fatigue}/10</span></div>
+                ${entry.notes ? `<div class="text-sm text-gray-600 dark:text-gray-300 border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">${entry.notes}</div>` : ''}
+              `;
+              
+              historyContainer.appendChild(card);
+            });
+          } else {
+            historyContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">暂无历史反馈记录</p>';
+          }
+        } else {
+          // Hide history
+          historyContainer.classList.add('hidden');
+          document.getElementById('view-history').textContent = '查看历史反馈';
+        }
+      },
+      
+      // Task modal handling
+      openTaskModal(taskName = null) {
+        const modal = document.getElementById('task-modal');
+        const title = document.getElementById('modal-title');
+        
+        // Clear form
+        document.getElementById('task-name').value = '';
+        document.getElementById('task-start').value = '';
+        document.getElementById('task-end').value = '';
+        document.getElementById('task-hours').value = '';
+        document.getElementById('task-start-time').value = '';
+        document.getElementById('task-end-time').value = '';
+        document.getElementById('task-category').value = '📁 其他任务';
+        document.getElementById('task-priority').value = '中';
+        
+        // Enable name field by default
+        document.getElementById('task-name').disabled = false;
+        
+        if (taskName) {
+          // Edit mode
+          title.textContent = '编辑任务';
+          const tasks = DataStore.getTasks();
+          const task = tasks.find(t => t.name === taskName);
+          
+          if (task) {
+            this.editingTask = task;
+            
+            document.getElementById('task-name').value = task.name;
+            document.getElementById('task-name').disabled = true; // Don't allow name changes
+            document.getElementById('task-start').value = task.start;
+            document.getElementById('task-end').value = task.end;
+            document.getElementById('task-hours').value = task.estimatedHours;
+            
+            if (task.timeRange && task.timeRange.length === 2) {
+              document.getElementById('task-start-time').value = task.timeRange[0] || '';
+              document.getElementById('task-end-time').value = task.timeRange[1] || '';
+            }
+            
+            document.getElementById('task-category').value = task.category || '📁 其他任务';
+            document.getElementById('task-priority').value = task.priority || '中';
+          }
+        } else {
+          // Add mode
+          title.textContent = '添加新任务';
+          this.editingTask = null;
+          
+          // Set default dates (today and tomorrow)
+          const today = new Date();
+          const tomorrow = new Date();
+          tomorrow.setDate(today.getDate() + 1);
+          
+          document.getElementById('task-start').value = today.toISOString().split('T')[0];
+          document.getElementById('task-end').value = tomorrow.toISOString().split('T')[0];
+        }
+        
+        modal.classList.remove('hidden');
+      },
+      
+      closeTaskModal() {
+        document.getElementById('task-modal').classList.add('hidden');
+        this.editingTask = null;
+      },
+      
+      saveTask() {
+        // Validate form
+        const name = document.getElementById('task-name').value.trim();
+        const start = document.getElementById('task-start').value;
+        const end = document.getElementById('task-end').value;
+        const hours = parseFloat(document.getElementById('task-hours').value);
+        const startTime = document.getElementById('task-start-time').value;
+        const endTime = document.getElementById('task-end-time').value;
+        const category = document.getElementById('task-category').value;
+        const priority = document.getElementById('task-priority').value;
+        
+        if (!name) {
+          this.showNotification('请输入任务名称', 'error');
+          return;
+        }
+        
+        if (!start || !end) {
+          this.showNotification('请选择开始和结束日期', 'error');
+          return;
+        }
+        
+        if (new Date(start) > new Date(end)) {
+          this.showNotification('结束日期不能早于开始日期', 'error');
+          return;
+        }
+        
+        if (!hours || hours <= 0) {
+          this.showNotification('请输入有效的小时数', 'error');
+          return;
+        }
+        
+        // Create task object
+        const task = {
+          name,
+          start,
+          end,
+          estimatedHours: hours,
+          timeRange: [startTime, endTime],
+          category,
+          priority
+        };
+        
+        // If in edit mode, preserve the original name
+        if (this.editingTask) {
+          task.name = this.editingTask.name;
+        } else {
+          // Check for duplicate names
+          const tasks = DataStore.getTasks();
+          if (tasks.some(t => t.name === name)) {
+            this.showNotification('已存在同名任务，请更改名称', 'error');
+            return;
+          }
+        }
+        
+        // Save task
+        if (DataStore.saveTask(task)) {
+          this.closeTaskModal();
+          this.renderAll();
+          this.showNotification(this.editingTask ? '任务已更新' : '任务已添加', 'success');
+        }
+      },
+      
+      // Details modal
+      openDetailsModal(taskName) {
+        const tasks = DataStore.getTasks();
+        const task = tasks.find(t => t.name === taskName);
+        
+        if (!task) return;
+        
+        const completedHours = DataStore.getCompletedHours();
+        const modal = document.getElementById('details-modal');
+        const titleEl = document.getElementById('details-title');
+        const contentEl = document.getElementById('details-content');
+        
+        titleEl.textContent = task.name;
+        contentEl.innerHTML = '';
+        
+        // Calculate task stats
+        const now = new Date();
+        const start = new Date(task.start);
+        const end = new Date(task.end);
+        
+        let status = '未开始';
+        if (now > end) status = '已完成';
+        else if (now >= start) status = '进行中';
+        
+        const totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const elapsedDays = Math.max(0, Math.min(Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1, totalDays));
+        const timeProgress = Math.round((elapsedDays / totalDays) * 100);
+        
+        // Calculate completion
+        let totalTaskHours = 0;
+        let completedTaskHours = 0;
+        
+        const schedule = TaskScheduler.scheduleTasks([task]);
+        
+        Object.keys(schedule).forEach(date => {
+          schedule[date].forEach(item => {
+            const taskId = `${date}-${item.name}`;
+            const hours = parseFloat(item.hours);
+            totalTaskHours += hours;
+            completedTaskHours += Math.min(parseFloat(completedHours[taskId] || 0), hours);
+          });
+        });
+        
+        const completionPercentage = totalTaskHours > 0 ? Math.round((completedTaskHours / totalTaskHours) * 100) : 0;
+        
+        // Create content
+        const infoSection = document.createElement('div');
+        infoSection.className = 'grid grid-cols-2 gap-4';
+        
+        infoSection.innerHTML = `
+          <div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">分类</div>
+            <div class="font-medium">${task.category}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">优先级</div>
+            <div class="font-medium">${
+              task.priority === '高' ? '🔥 高' : 
+              task.priority === '中' ? '⚡ 中' : 
+              '🌱 低'
+            }</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">开始日期</div>
+            <div class="font-medium">${task.start}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">结束日期</div>
+            <div class="font-medium">${task.end}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">每日时间段</div>
+            <div class="font-medium">${task.timeRange[0] || '?'} ~ ${task.timeRange[1] || '?'}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">总预计小时</div>
+            <div class="font-medium">${task.estimatedHours} 小时</div>
+          </div>
+        `;
+        
+        contentEl.appendChild(infoSection);
+        
+        // Progress section
+        const progressSection = document.createElement('div');
+        progressSection.className = 'mt-6 space-y-4';
+        
+        progressSection.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <div class="text-sm font-medium">时间进度</div>
+              <div class="text-sm">${timeProgress}%</div>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div class="bg-primary h-2.5 rounded-full" style="width: ${timeProgress}%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <div class="text-sm font-medium">完成进度</div>
+              <div class="text-sm">${completionPercentage}%</div>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div class="bg-success h-2.5 rounded-full" style="width: ${completionPercentage}%"></div>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mt-2">
+            <div class="text-sm mb-2">状态: <span class="font-medium">${status}</span></div>
+            <div class="text-sm mb-2">已完成: <span class="font-medium">${completedTaskHours.toFixed(1)} / ${totalTaskHours.toFixed(1)} 小时</span></div>
+            <div class="text-sm">已过天数: <span class="font-medium">${elapsedDays} / ${totalDays} 天</span></div>
+          </div>
+        `;
+        
+        contentEl.appendChild(progressSection);
+        
+        modal.classList.remove('hidden');
+      },
+      
+      closeDetailsModal() {
+        document.getElementById('details-modal').classList.add('hidden');
+      },
+      
+      // Confirmation modal
+      openConfirmModal(message, onConfirm) {
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('confirm-message').textContent = message;
+        
+        // Set confirm action
+        document.getElementById('confirm-ok').onclick = () => {
+          onConfirm();
+          this.closeConfirmModal();
+        };
+        
+        modal.classList.remove('hidden');
+      },
+      
+      closeConfirmModal() {
+        document.getElementById('confirm-modal').classList.add('hidden');
+      },
+      
+      // Data import/export
+      exportData() {
+        const data = DataStore.exportData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `task-planner-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showSettingsStatus('数据已导出');
+      },
+      
+      importData(file) {
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            
+            if (DataStore.importData(data)) {
+              this.renderAll();
+              this.showSettingsStatus('数据已导入');
+            } else {
+              this.showSettingsStatus('导入失败，数据格式错误', 'error');
+            }
+          } catch (error) {
+            console.error('Error parsing import file:', error);
+            this.showSettingsStatus('导入失败，文件格式错误', 'error');
+          }
+        };
+        
+        reader.readAsText(file);
+      },
+      
+      // Notifications and status messages
+      showNotification(message, type = 'success') {
+        // Could be enhanced with a proper notification system
+        console.log(`${type.toUpperCase()}: ${message}`);
+        alert(message);
+      },
+      
+      showSettingsStatus(message, type = 'success') {
+        const statusEl = document.getElementById('settings-status');
+        statusEl.textContent = message;
+        statusEl.className = `text-sm ${type === 'success' ? 'text-success' : 'text-danger'}`;
+        statusEl.classList.remove('hidden');
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+          statusEl.classList.add('hidden');
+        }, 3000);
+      }
+    };
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+      UI.init();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>添加任务</title>
+</head>
+<body>
+  <h1>➕ 添加任务</h1>
+
+  <label>任务名称：<input id="name" type="text"></label><br>
+  <label>开始日期：<input id="start" type="date"></label><br>
+  <label>结束日期：<input id="end" type="date"></label><br>
+  <label>预计总小时数：<input id="hours" type="number"></label><br>
+  <label>每日开始时间（如 09:00）：<input id="startTime" type="time"></label><br>
+  <label>每日结束时间（如 11:00）：<input id="endTime" type="time"></label><br>
+
+  <!-- ✅ 分类字段 -->
+  <label>任务分类：
+    <select id="category">
+      <option value="📚 论文任务">📚 论文任务</option>
+      <option value="📖 学习任务">📖 学习任务</option>
+      <option value="💪 健身任务">💪 健身任务</option>
+      <option value="📁 其他任务" selected>📁 其他任务</option>
+    </select>
+  </label><br><br>
+
+  <!-- 在“任务分类”下方添加 -->
+  <label>优先级：
+    <select id="priority">
+      <option value="高">🔥 高</option>
+      <option value="中" selected>⚡ 中</option>
+      <option value="低">🌱 低</option>
+    </select>
+  </label><br><br>
+
+  <button onclick="saveTask()">保存任务</button><br><br>
+  <a href="index.html">⬅ 返回首页</a>
+
+  <script>
+  // 检查是否为编辑模式
+  const urlParams = new URLSearchParams(location.search);
+  const editName = urlParams.get("edit");
+  let isEdit = false;
+
+  if (editName) {
+    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    const task = tasks.find(t => t.name === editName);
+    if (task) {
+      isEdit = true;
+      document.getElementById("name").value = task.name;
+      document.getElementById("name").disabled = true; // 名称不可编辑
+      document.getElementById("start").value = task.start;
+      document.getElementById("end").value = task.end;
+      document.getElementById("hours").value = task.estimatedHours;
+      document.getElementById("startTime").value = task.timeRange?.[0] || "";
+      document.getElementById("endTime").value = task.timeRange?.[1] || "";
+      document.getElementById("category").value = task.category || "📁 其他任务";
+      document.getElementById("priority").value = task.priority || "中";
+    }
+  }
+
+  function saveTask() {
+    const task = {
+      name: document.getElementById("name").value,
+      start: document.getElementById("start").value,
+      end: document.getElementById("end").value,
+      estimatedHours: parseFloat(document.getElementById("hours").value),
+      timeRange: [document.getElementById("startTime").value, document.getElementById("endTime").value],
+      category: document.getElementById("category").value,
+      priority: document.getElementById("priority").value
+    };
+
+    let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+
+    if (isEdit) {
+      // 编辑模式：替换原任务
+      tasks = tasks.map(t => t.name === task.name ? task : t);
+    } else {
+      if (checkConflict(task, tasks)) {
+        if (!confirm("⚠️ 时间段存在冲突，仍要添加吗？")) return;
+      }
+      tasks.push(task);
+    }
+
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    alert(isEdit ? "✅ 任务已更新！" : "✅ 任务已保存！");
+    location.href = "index.html";
+  }
+
+  function checkConflict(newTask, existingTasks) {
+    const newStart = new Date(newTask.start);
+    const newEnd = new Date(newTask.end);
+    const ts1 = newTask.timeRange;
+
+    return existingTasks.some(task => {
+      if (isEdit && task.name === newTask.name) return false; // 编辑时跳过自己
+      const existStart = new Date(task.start);
+      const existEnd = new Date(task.end);
+      const overlap = !(newEnd < existStart || newStart > existEnd);
+      if (!overlap) return false;
+
+      const ts2 = task.timeRange || ["00:00", "00:00"];
+      return !(ts1[1] <= ts2[0] || ts1[0] >= ts2[1]);
+    });
+  }
+  </script>
+</body>
+</html>

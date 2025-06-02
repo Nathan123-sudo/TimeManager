@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>任务规划首页</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .danger-zone {
+      margin: 20px 0;
+      padding: 12px;
+      border-top: 1px solid #ccc;
+    }
+    .danger-zone button {
+      margin: 6px;
+    }
+    .day-block {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    .task-item {
+      margin: 6px 0;
+    }
+    nav {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📅 我的每日任务安排</h1>
+
+  <nav>
+    <a href="index.html">🏠 首页</a> |
+    <a href="add_task.html">➕ 添加任务</a> |
+    <a href="calendar.html">📆 日历视图</a> |
+    <a href="checkin.html">✅ 每日打卡</a>
+  </nav>
+
+  <div class="danger-zone">
+    <label>按分类筛选：
+      <select id="categoryFilter" onchange="filterByCategory()">
+        <option value="">全部</option>
+        <option value="📚 论文任务">📚 论文任务</option>
+        <option value="📖 学习任务">📖 学习任务</option>
+        <option value="💪 健身任务">💪 健身任务</option>
+        <option value="📁 其他任务">📁 其他任务</option>
+      </select>
+    </label>
+    <br><br>
+    <button onclick="clearTasks()">清除所有任务</button>
+    <button onclick="clearCompleted()">清除完成状态</button>
+    <button onclick="clearFeedback()">清除每日反馈</button>
+    <button onclick="resetAll()">🔄 全部重置</button>
+    <p id="clear-status" style="color: green; font-weight: bold;"></p>
+  </div>
+
+  <div id="progress"></div>
+  <div id="schedule"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    let currentCategory = "";
+
+    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    const schedule = scheduleTasks(tasks);
+    renderSchedule(schedule);
+    renderProgress();
+
+    function getPriorityColor(level) {
+      if (level === "高") return "red";
+      if (level === "中") return "orange";
+      if (level === "低") return "green";
+      return "#555";
+    }
+
+    function renderSchedule(schedule) {
+      const completedHours = JSON.parse(localStorage.getItem("completedHours") || "{}");
+      const container = document.getElementById("schedule");
+      container.innerHTML = "";
+
+      const dates = Object.keys(schedule).sort();
+      dates.forEach(date => {
+        const dayBlock = document.createElement("div");
+        dayBlock.className = "day-block";
+        const title = document.createElement("strong");
+        title.textContent = date;
+        dayBlock.appendChild(title);
+
+        schedule[date].forEach(item => {
+          if (!currentCategory || item.category === currentCategory) {
+            const taskId = `${date}-${item.name}`;
+            const done = parseFloat(completedHours[taskId]) || 0;
+            const total = parseFloat(item.hours);
+            const percent = Math.round((done / total) * 100);
+
+            const p = document.createElement("p");
+            p.innerHTML = `
+              <strong style="color:${getPriorityColor(item.priority)}">[${item.priority}]</strong>
+              ${item.name} ${item.category ? `<span>${item.category}</span>` : ""}<br>
+              🕐 时间段：${item.timeRange?.[0] || "?"} ~ ${item.timeRange?.[1] || "?"}
+              <span style="margin-left:12px;">${done}/${total} 小时 (${percent}%)</span>
+              <input type="number" min="0" max="${total}" step="0.1" value="${done}" style="width:40px;"
+                     onchange="updateProgress('${taskId}', this.value)">
+              <button onclick="editTask('${taskId}')">编辑</button>
+              <button onclick="deleteTask('${taskId}')" style="color:red;">删除</button>
+            `;
+            dayBlock.appendChild(p);
+          }
+        });
+
+        container.appendChild(dayBlock);
+      });
+    }
+
+    function renderProgress() {
+      const completed = JSON.parse(localStorage.getItem("completedHours") || "{}");
+      const schedule = scheduleTasks(JSON.parse(localStorage.getItem("tasks") || "[]"));
+
+      let total = 0, done = 0;
+      Object.keys(schedule).forEach(date => {
+        schedule[date].forEach(item => {
+          if (!currentCategory || item.category === currentCategory) {
+            const id = `${date}-${item.name}`;
+            total += parseFloat(item.hours);
+            done += Math.min(parseFloat(completed[id] || 0), parseFloat(item.hours));
+          }
+        });
+      });
+
+      document.getElementById("progress").innerHTML =
+        `<p>✅ 总完成时长：${done.toFixed(1)} / ${total.toFixed(1)} 小时（${total ? Math.round(done / total * 100) : 0}%）` +
+        (currentCategory ? `，当前分类：${currentCategory}` : "") + `</p>`;
+    }
+
+    function updateProgress(taskId, value) {
+      const data = JSON.parse(localStorage.getItem("completedHours") || "{}");
+      data[taskId] = parseFloat(value);
+      localStorage.setItem("completedHours", JSON.stringify(data));
+      renderSchedule(schedule);
+      renderProgress();
+    }
+
+    function deleteTask(taskId) {
+      const [date, name] = taskId.split("-");
+      const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+      const updated = tasks.filter(t => t.name !== name);
+      localStorage.setItem("tasks", JSON.stringify(updated));
+      alert(`✅ 已删除任务：${name}`);
+      location.reload();
+    }
+
+    function editTask(taskId) {
+      alert("✏️ 编辑功能暂未实现，可扩展跳转至编辑页");
+    }
+
+    function clearTasks() {
+      localStorage.removeItem("tasks");
+      document.getElementById("clear-status").innerText = "✅ 所有任务已清除！请刷新页面";
+    }
+
+    function clearCompleted() {
+      localStorage.removeItem("completedHours");
+      document.getElementById("clear-status").innerText = "✅ 完成状态已清除！请刷新页面";
+    }
+
+    function clearFeedback() {
+      localStorage.removeItem("dailyFeedback");
+      document.getElementById("clear-status").innerText = "✅ 每日反馈已清除！";
+    }
+
+    function resetAll() {
+      localStorage.clear();
+      document.getElementById("clear-status").innerText = "✅ 所有数据已重置！请刷新页面";
+    }
+
+    function filterByCategory() {
+      currentCategory = document.getElementById("categoryFilter").value;
+      const filteredTasks = currentCategory ? tasks.filter(t => t.category === currentCategory) : tasks;
+      const filteredSchedule = scheduleTasks(filteredTasks);
+      renderSchedule(filteredSchedule);
+      renderProgress();
+    }
+
+    // 自动提醒
+    if (window.Notification && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    function notifyTodayTasks() {
+      if (!window.Notification || Notification.permission !== "granted") {
+        alert("请允许浏览器通知权限！");
+        return;
+      }
+      const today = new Date().toISOString().split("T")[0];
+      const schedule = scheduleTasks(tasks);
+      const todayTasks = schedule[today] || [];
+      if (todayTasks.length === 0) {
+        new Notification("今日无任务安排");
+        return;
+      }
+      let msg = todayTasks.map(t => `${t.name}（${t.hours}小时，${t.category}）`).join('\n');
+      new Notification("今日任务提醒", { body: msg });
+    }
+
+    let notifiedDate = "";
+    setInterval(() => {
+      const now = new Date();
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+      const todayStr = now.toISOString().split("T")[0];
+      if (hour === 8 && minute < 5 && notifiedDate !== todayStr) {
+        notifyTodayTasks();
+        notifiedDate = todayStr;
+      }
+    }, 60 * 1000);
+  </script>
+</body>
+</html>

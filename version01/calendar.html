@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>任务日历视图</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+    .day {
+      border: 1px solid #ccc;
+      min-height: 80px;
+      padding: 5px;
+      background: white;
+      position: relative;
+      cursor: pointer;
+    }
+    .day span.task-count {
+      font-size: 12px;
+      color: #888;
+      display: block;
+      margin-top: 4px;
+    }
+    .today {
+      background-color: #e6f7ff;
+      border: 2px solid #1890ff;
+    }
+
+    /* Modal 样式 */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center;
+      z-index: 999;
+    }
+    .modal-box {
+      background: white; padding: 20px; border-radius: 8px; width: 300px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      text-align: left;
+    }
+    .modal-box h3 {
+      margin-top: 0;
+    }
+    .modal-box button {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📆 我的任务日历</h1>
+  <div id="calendar" class="calendar"></div>
+
+  <script>
+    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    const schedule = scheduleTasks(tasks);
+    const calendarEl = document.getElementById("calendar");
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth(); // 0 = 一月
+
+    const firstDay = new Date(year, month, 1);
+    const startDay = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < startDay; i++) {
+      const emptyCell = document.createElement("div");
+      calendarEl.appendChild(emptyCell);
+    }
+
+    for (let date = 1; date <= daysInMonth; date++) {
+      const fullDateStr = `${year}-${(month + 1).toString().padStart(2, "0")}-${date.toString().padStart(2, "0")}`;
+      const taskList = schedule[fullDateStr] || [];
+
+      const cell = document.createElement("div");
+      cell.className = "day";
+      if (fullDateStr === today.toISOString().split("T")[0]) {
+        cell.classList.add("today");
+      }
+
+      const title = document.createElement("strong");
+      title.textContent = date;
+      cell.appendChild(title);
+
+      const taskCount = document.createElement("span");
+      taskCount.className = "task-count";
+      taskCount.textContent = taskList.length > 0 ? `📌 ${taskList.length} 个任务` : "";
+      cell.appendChild(taskCount);
+
+      if (taskList.length > 0) {
+        cell.onclick = () => {
+          const details = taskList.map(t => `🔹 ${t.name}（${t.timeRange?.[0] || "?"}~${t.timeRange?.[1] || "?"}）`).join("<br>");
+          const modal = document.createElement("div");
+          modal.innerHTML = `
+            <div class="modal-overlay">
+              <div class="modal-box">
+                <h3>${fullDateStr} 的任务</h3>
+                <p>${details}</p>
+                <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+        };
+      }
+
+      calendarEl.appendChild(cell);
+    }
+
+    function scheduleTasks(tasks) {
+      const schedule = {};
+      tasks.forEach(task => {
+        const start = new Date(task.start);
+        const end = new Date(task.end);
+        const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const dailyHours = (task.estimatedHours / days).toFixed(1);
+        for (let i = 0; i < days; i++) {
+          const date = new Date(start);
+          date.setDate(date.getDate() + i);
+          const dateStr = date.toISOString().split("T")[0];
+          if (!schedule[dateStr]) schedule[dateStr] = [];
+          schedule[dateStr].push({
+            name: task.name,
+            hours: dailyHours,
+            timeRange: task.timeRange
+          });
+        }
+      });
+      return schedule;
+    }
+  </script>
+</body>
+</html>

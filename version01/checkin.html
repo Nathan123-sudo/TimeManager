@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>每日反馈打卡</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>✅ 每日任务打卡与反馈</h1>
+
+  <div id="today-tasks"></div>
+  <hr>
+
+  <h3>🧠 精神状态反馈</h3>
+  <label>疲劳程度（0-10）：
+    <input type="range" id="fatigue" min="0" max="10" value="5" oninput="updateFatigueValue(this.value)">
+    <span id="fatigue-value">5</span>
+  </label>
+  <br><br>
+
+  <label>情绪状态：
+    <select id="mood">
+      <option value="😃 很开心">😃 很开心</option>
+      <option value="🙂 一般" selected>🙂 一般</option>
+      <option value="😩 累">😩 累</option>
+      <option value="😠 烦躁">😠 烦躁</option>
+    </select>
+  </label>
+  <br><br>
+
+  <label>备注 / 今日困难：</label><br>
+  <textarea id="notes" rows="4" cols="40" placeholder="如：任务过重、无法集中等..."></textarea>
+  <br><br>
+
+  <button onclick="saveFeedback()">💾 提交反馈</button>
+  <p id="save-status"></p>
+
+  <hr>
+  <button onclick="viewHistory()">📊 查看过去反馈</button>
+  <div id="history"></div>
+
+  <hr>
+  <h3>📈 当前任务进度一览</h3>
+  <div id="task-progress"></div>
+
+  <script>
+    const today = new Date().toISOString().split('T')[0];
+    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    const schedule = scheduleTasks(tasks);
+
+    const taskBlock = document.getElementById("today-tasks");
+    taskBlock.innerHTML = `<h3>📅 ${today} 的任务</h3>`;
+
+    if (schedule[today]) {
+      schedule[today].forEach(item => {
+        taskBlock.innerHTML += `<p>📌 ${item.name} (${item.timeRange?.[0] || "?"}~${item.timeRange?.[1] || "?"}) - ${item.hours}小时</p>`;
+      });
+    } else {
+      taskBlock.innerHTML += "<p>🎉 今天无任务安排</p>";
+    }
+
+    function updateFatigueValue(val) {
+      document.getElementById("fatigue-value").innerText = val;
+    }
+
+    function saveFeedback() {
+      const data = {
+        fatigue: document.getElementById("fatigue").value,
+        mood: document.getElementById("mood").value,
+        notes: document.getElementById("notes").value
+      };
+
+      const feedback = JSON.parse(localStorage.getItem("dailyFeedback") || "{}");
+      feedback[today] = data;
+      localStorage.setItem("dailyFeedback", JSON.stringify(feedback));
+      document.getElementById("save-status").innerText = "✅ 已保存反馈！";
+
+      // 清空输入
+      document.getElementById("fatigue").value = 5;
+      updateFatigueValue(5);
+      document.getElementById("mood").value = "🙂 一般";
+      document.getElementById("notes").value = "";
+    }
+
+    function viewHistory() {
+      const feedback = JSON.parse(localStorage.getItem("dailyFeedback") || "{}");
+      const sortedDates = Object.keys(feedback).sort().reverse().slice(0, 7);
+      const historyBlock = document.getElementById("history");
+      historyBlock.innerHTML = "<h4>📆 近7日反馈：</h4>";
+      if (sortedDates.length === 0) {
+        historyBlock.innerHTML += "<p>暂无记录</p>";
+        return;
+      }
+      sortedDates.forEach(date => {
+        const f = feedback[date];
+        historyBlock.innerHTML += `
+          <p><strong>${date}</strong><br>
+          疲劳：${f.fatigue} / 情绪：${f.mood}<br>
+          备注：${f.notes || '无'}</p>
+        `;
+      });
+    }
+
+    function scheduleTasks(tasks) {
+      const schedule = {};
+      tasks.forEach(task => {
+        const start = new Date(task.start);
+        const end = new Date(task.end);
+        const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const dailyHours = (task.estimatedHours / days).toFixed(1);
+        for (let i = 0; i < days; i++) {
+          const date = new Date(start);
+          date.setDate(date.getDate() + i);
+          const dateStr = date.toISOString().split("T")[0];
+          if (!schedule[dateStr]) schedule[dateStr] = [];
+          schedule[dateStr].push({
+            name: task.name,
+            hours: dailyHours,
+            timeRange: task.timeRange
+          });
+        }
+      });
+      return schedule;
+    }
+
+    function renderProgressOverview(tasks) {
+      const now = new Date();
+      const container = document.getElementById("task-progress");
+      container.innerHTML = "";
+
+      tasks.forEach(task => {
+        const start = new Date(task.start);
+        const end = new Date(task.end);
+        const totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const elapsedDays = Math.min(Math.max(Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1, 0), totalDays);
+        const percent = Math.floor((elapsedDays / totalDays) * 100);
+
+        let status = "未开始";
+        if (now >= start && now <= end) status = "进行中";
+        else if (now > end) status = "已完成";
+
+        const wrapper = document.createElement("div");
+        wrapper.style.marginBottom = "12px";
+
+        wrapper.innerHTML = `
+          <strong>${task.name}</strong> (${task.start} ~ ${task.end})<br>
+          状态：<span>${status}</span> | 进度：${percent}%<br>
+          <div style="background:#eee;width:100%;height:10px;border-radius:4px;overflow:hidden;">
+            <div style="height:10px;width:${percent}%;background:#4caf50;"></div>
+          </div>
+        `;
+        container.appendChild(wrapper);
+      });
+    }
+
+    renderProgressOverview(tasks);
+  </script>
+</body>
+</html>
