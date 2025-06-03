@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="任务规划助手 - 高效管理您的任务和时间">
   <title>任务规划助手</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -26,37 +27,422 @@
     }
   </script>
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- Chart.js for statistics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SortableJS for drag and drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzVENUNERSIgZD0iTTEyIDJDNi41IDIgMiA2LjUgMiAxMnM0LjUgMTAgMTAgMTAgMTAtNC41IDEwLTEwUzE3LjUgMiAxMiAyek0xMCAyMGMtNC40IDAtOC0zLjYtOC04czMuNi04IDgtOCA4IDMuNiA4IDgtMy42IDgtOCA4em0xMi0xMGMwIDEuMi0wLjMgMi40LTAuOCAzLjVsMS40IDEuNGMwLjctMS41IDEuMS0zLjIgMS4xLTQuOXMtMC40LTMuNC0xLjEtNC45bC0xLjQgMS40YzAuNSAxLjEgMC44IDIuMyAwLjggMy41ek0xMC45IDE2LjkgMTUuNSA5bC0xLjgtMSAtNC42IDcuOUw2LjQgMTMgNSAxNC43bDQuMiAzLjggMS43LTEuNnoiLz48L3N2Zz4=">
+  
+  <style>
+    /* Mobile-first responsive enhancements */
+    @media (max-width: 640px) {
+      .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+      
+      /* Hide scrollbar for navigation */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      
+      /* Better touch targets */
+      .tab-btn {
+        min-height: 44px;
+        min-width: 60px;
+      }
+      
+      /* Calendar improvements for mobile */
+      #calendar-grid > div {
+        height: 80px;
+        font-size: 12px;
+      }
+      
+      /* Modal improvements */
+      .modal-content {
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
+      }
+    }
+    
+    /* Extra small screens */
+    @media (max-width: 480px) {
+      .xs\:hidden {
+        display: none;
+      }
+      
+      .xs\:inline {
+        display: inline;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      #calendar-grid > div {
+        height: 60px;
+        padding: 4px;
+      }
+    }
+    
+    /* Touch-friendly improvements */
+    button, input, select, textarea {
+      touch-action: manipulation;
+    }
+    
+    /* Better focus states for touch */
+    input:focus, select:focus, textarea:focus, button:focus {
+      outline: 2px solid #5D5CDE;
+      outline-offset: 2px;
+    }
+    
+    /* Loading states */
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    
+    /* Drag and drop styles */
+    .sortable-ghost {
+      opacity: 0.4 !important;
+      transform: rotate(3deg);
+    }
+    
+    .sortable-chosen {
+      background-color: rgba(93, 92, 222, 0.1) !important;
+      border: 2px dashed #5D5CDE !important;
+    }
+    
+    .sortable-drag {
+      transform: rotate(3deg);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Keyboard shortcuts notification */
+    .shortcut-hint {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(93, 92, 222, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      z-index: 1000;
+      animation: slideInRight 0.3s ease-out;
+    }
+    
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
   <div class="container mx-auto px-4 py-6 max-w-5xl">
     <!-- App Header -->
     <header class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-        <i class="ri-calendar-check-fill text-primary"></i>
-        <span>任务规划助手</span>
-      </h1>
-      <p class="text-gray-500 dark:text-gray-400 mt-1">高效管理您的任务和时间</p>
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <i class="ri-calendar-check-fill text-primary"></i>
+            <span>任务规划助手</span>
+          </h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-1">高效管理您的任务和时间</p>
+        </div>
+        
+        <!-- Cloud Sync Status and Login -->
+        <div class="flex items-center space-x-3">
+          <!-- Sync Status Indicator -->
+          <div id="sync-status" class="flex items-center space-x-2 hidden">
+            <div id="sync-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
+            <span id="sync-text" class="text-sm text-gray-500 dark:text-gray-400">本地模式</span>
+          </div>
+          
+          <!-- User Account Section -->
+          <div id="auth-section">
+            <!-- Login Button (shown when logged out) -->
+            <button id="login-btn" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors flex items-center">
+              <i class="ri-cloud-line mr-2"></i>
+              云端同步
+            </button>
+            
+            <!-- User Menu (shown when logged in) -->
+            <div id="user-menu" class="hidden relative">
+              <button id="user-menu-btn" class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <div id="user-avatar" class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+                  U
+                </div>
+                <span id="user-name" class="text-sm font-medium">用户</span>
+                <i class="ri-arrow-down-s-line text-xs"></i>
+              </button>
+              
+              <!-- Dropdown Menu -->
+              <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+                  <p id="user-email" class="text-sm text-gray-600 dark:text-gray-400">example@email.com</p>
+                  <p class="text-xs text-gray-400">云端数据已同步</p>
+                </div>
+                <div class="py-1">
+                  <button id="force-sync" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center">
+                    <i class="ri-refresh-line mr-2"></i>
+                    强制同步
+                  </button>
+                  <button id="import-local" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center">
+                    <i class="ri-upload-cloud-line mr-2"></i>
+                    导入本地数据
+                  </button>
+                  <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                  <button id="logout-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-danger flex items-center">
+                    <i class="ri-logout-box-line mr-2"></i>
+                    退出登录
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- Main Navigation -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md mb-6 overflow-hidden">
-      <nav class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-        <button class="tab-btn active py-4 px-6 font-medium focus:outline-none" data-tab="dashboard">
-          <i class="ri-dashboard-line mr-2"></i>概览
+      <nav class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-hide">
+        <button class="tab-btn active py-3 px-4 sm:py-4 sm:px-6 font-medium focus:outline-none whitespace-nowrap flex-shrink-0 min-w-0" data-tab="dashboard">
+          <i class="ri-dashboard-line mr-1 sm:mr-2"></i>
+          <span class="hidden xs:inline">概览</span>
+          <span class="xs:hidden">概览</span>
         </button>
-        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="tasks">
-          <i class="ri-task-line mr-2"></i>任务管理
+        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 font-medium focus:outline-none whitespace-nowrap flex-shrink-0 min-w-0" data-tab="tasks">
+          <i class="ri-task-line mr-1 sm:mr-2"></i>
+          <span class="hidden xs:inline">任务管理</span>
+          <span class="xs:hidden">任务</span>
         </button>
-        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="calendar">
-          <i class="ri-calendar-line mr-2"></i>日历视图
+        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 font-medium focus:outline-none whitespace-nowrap flex-shrink-0 min-w-0" data-tab="calendar">
+          <i class="ri-calendar-line mr-1 sm:mr-2"></i>
+          <span class="hidden xs:inline">日历视图</span>
+          <span class="xs:hidden">日历</span>
         </button>
-        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="checkin">
-          <i class="ri-clipboard-line mr-2"></i>每日打卡
+        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 font-medium focus:outline-none whitespace-nowrap flex-shrink-0 min-w-0" data-tab="checkin">
+          <i class="ri-clipboard-line mr-1 sm:mr-2"></i>
+          <span class="hidden xs:inline">每日打卡</span>
+          <span class="xs:hidden">打卡</span>
         </button>
-        <button class="tab-btn py-4 px-6 font-medium focus:outline-none" data-tab="settings">
-          <i class="ri-settings-line mr-2"></i>设置
+        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 font-medium focus:outline-none whitespace-nowrap flex-shrink-0 min-w-0" data-tab="analytics">
+          <i class="ri-bar-chart-box-line mr-1 sm:mr-2"></i>
+          <span class="hidden xs:inline">数据分析</span>
+          <span class="xs:hidden">分析</span>
+        </button>
+        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 font-medium focus:outline-none whitespace-nowrap flex-shrink-0 min-w-0" data-tab="settings">
+          <i class="ri-settings-line mr-1 sm:mr-2"></i>
+          <span class="hidden xs:inline">设置</span>
+          <span class="xs:hidden">设置</span>
         </button>
       </nav>
+    </div>
+
+    <!-- Quick Actions Floating Button -->
+    <div id="quick-actions" class="fixed bottom-6 right-6 z-40">
+      <div id="quick-menu" class="hidden absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-2 space-y-1">
+        <button id="quick-add-task" class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center">
+          <i class="ri-add-line mr-2"></i> 快速添加任务 (Ctrl+N)
+        </button>
+        <button id="quick-timer" class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center">
+          <i class="ri-timer-line mr-2"></i> 番茄钟计时器
+        </button>
+        <button id="quick-checkin" class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center">
+          <i class="ri-clipboard-line mr-2"></i> 今日打卡
+        </button>
+        <button id="quick-backup" class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center">
+          <i class="ri-save-line mr-2"></i> 自动备份
+        </button>
+      </div>
+      <button id="quick-fab" class="bg-primary text-white w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center">
+        <i class="ri-add-line text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Pomodoro Timer Modal -->
+    <div id="timer-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4 max-h-screen overflow-y-auto">
+        <div class="text-center">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">🍅 番茄钟计时器</h3>
+            <button id="timer-settings-toggle" class="text-gray-500 hover:text-primary p-1" title="设置">
+              <i class="ri-settings-3-line"></i>
+            </button>
+          </div>
+          
+          <!-- Timer Settings Panel -->
+          <div id="timer-settings" class="hidden mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-left">
+            <h4 class="font-medium mb-3 text-center">⚙️ 计时器设置</h4>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">工作时间(分钟)</label>
+                <input id="work-time-setting" type="number" min="1" max="120" value="25" 
+                  class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-1">短休息(分钟)</label>
+                <input id="short-break-setting" type="number" min="1" max="60" value="5" 
+                  class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-1">长休息(分钟)</label>
+                <input id="long-break-setting" type="number" min="1" max="120" value="15" 
+                  class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-1">长休息间隔</label>
+                <input id="sessions-setting" type="number" min="1" max="10" value="4" 
+                  class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+              </div>
+            </div>
+            
+            <div class="mb-4 border-t border-gray-200 dark:border-gray-600 pt-4">
+              <h5 class="font-medium mb-3">声音提醒</h5>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <label class="text-sm font-medium">启用声音提醒</label>
+                  <button id="sound-enabled-toggle" class="w-12 h-6 rounded-full bg-primary relative">
+                    <span class="sound-toggle-circle absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform duration-300 transform translate-x-6"></span>
+                  </button>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium mb-2">提醒音类型</label>
+                  <select id="sound-type-setting" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="beep">经典蜂鸣</option>
+                    <option value="chime">优雅铃声</option>
+                    <option value="bell">清脆铃铛</option>
+                    <option value="ding">简单叮咚</option>
+                    <option value="alarm">强力警报</option>
+                    <option value="melody">轻快旋律</option>
+                    <option value="nature">自然鸟鸣</option>
+                    <option value="digital">数字提示</option>
+                    <option value="custom">自定义音频</option>
+                  </select>
+                </div>
+                
+                <div id="custom-audio-section" class="hidden">
+                  <label class="block text-sm font-medium mb-2">上传音频文件</label>
+                  <input type="file" id="custom-audio-file" accept="audio/*" 
+                    class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">支持 MP3, WAV, OGG 等格式</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium mb-2">重复次数</label>
+                  <select id="repeat-count-setting" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="1">播放 1 次</option>
+                    <option value="3" selected>播放 3 次</option>
+                    <option value="5">播放 5 次</option>
+                    <option value="continuous">持续播放直到点击</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium mb-2">音量 (<span id="volume-display">70</span>%)</label>
+                  <input type="range" id="volume-setting" min="0" max="100" value="70" 
+                    class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+                
+                <button id="test-sound" class="w-full bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors">
+                  🔊 测试声音
+                </button>
+              </div>
+            </div>
+            
+            <div class="flex justify-center space-x-2">
+              <button id="apply-timer-settings" class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-opacity-90 transition-colors">
+                应用设置
+              </button>
+              <button id="reset-timer-settings" class="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-opacity-90 transition-colors">
+                恢复默认
+              </button>
+            </div>
+          </div>
+          
+          <div class="mb-6">
+            <div id="timer-display" class="text-6xl font-mono font-bold text-primary mb-4">25:00</div>
+            <div id="timer-mode" class="text-sm text-gray-500 dark:text-gray-400 mb-4">工作时间</div>
+            
+            <div class="flex justify-center space-x-4 mb-4">
+              <button id="timer-start" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                开始
+              </button>
+              <button id="timer-pause" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors hidden">
+                暂停
+              </button>
+              <button id="timer-reset" class="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                重置
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span>工作轮次:</span>
+              <span id="timer-sessions">1/4</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div id="timer-progress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end mt-6">
+          <button id="timer-close" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Templates Modal -->
+    <div id="templates-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold">📝 任务模板</h3>
+          <button id="templates-close" class="text-gray-400 hover:text-gray-500">
+            <i class="ri-close-line text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="font-medium">预设模板</h4>
+            <button id="create-template" class="text-primary text-sm hover:text-opacity-80">
+              <i class="ri-add-line mr-1"></i> 创建自定义模板
+            </button>
+          </div>
+          
+          <div id="templates-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Templates will be populated here -->
+          </div>
+        </div>
+        
+        <div id="custom-templates" class="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <h4 class="font-medium mb-4">我的模板</h4>
+          <div id="custom-templates-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Custom templates will be populated here -->
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab Content -->
@@ -144,35 +530,62 @@
 
     <div class="tab-content hidden" id="tasks">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-        <div class="flex flex-wrap justify-between items-center mb-6">
-          <h2 class="text-lg font-bold">所有任务</h2>
-          <div class="flex space-x-2 mt-2 sm:mt-0">
-            <div class="relative">
-              <select id="category-filter" class="appearance-none bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 pl-3 pr-10 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                <option value="">所有分类</option>
-                <option value="📚 论文任务">📚 论文任务</option>
-                <option value="📖 学习任务">📖 学习任务</option>
-                <option value="💪 健身任务">💪 健身任务</option>
-                <option value="📁 其他任务">📁 其他任务</option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-                <i class="ri-arrow-down-s-line text-gray-400"></i>
-              </div>
-            </div>
-            <div class="relative">
-              <select id="priority-filter" class="appearance-none bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 pl-3 pr-10 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                <option value="">所有优先级</option>
-                <option value="高">高优先级</option>
-                <option value="中">中优先级</option>
-                <option value="低">低优先级</option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-                <i class="ri-arrow-down-s-line text-gray-400"></i>
-              </div>
-            </div>
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold">所有任务</h2>
             <button id="task-add-btn" class="bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-opacity-90 transition-colors">
               <i class="ri-add-line mr-1"></i> 新建
             </button>
+          </div>
+          
+          <!-- Search and Filters Row -->
+          <div class="space-y-3">
+            <!-- Search -->
+            <div class="relative w-full">
+              <input id="task-search" type="text" placeholder="搜索任务..." 
+                class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-3 pl-10 pr-3 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                <i class="ri-search-line text-gray-400"></i>
+              </div>
+            </div>
+            
+            <!-- Filters Row -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div class="relative">
+                <select id="category-filter" class="w-full appearance-none bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-3 pl-3 pr-8 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                  <option value="">所有分类</option>
+                  <option value="📚 论文任务">📚 论文</option>
+                  <option value="📖 学习任务">📖 学习</option>
+                  <option value="💪 健身任务">💪 健身</option>
+                  <option value="📁 其他任务">📁 其他</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                  <i class="ri-arrow-down-s-line text-gray-400"></i>
+                </div>
+              </div>
+              
+              <div class="relative">
+                <select id="priority-filter" class="w-full appearance-none bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-3 pl-3 pr-8 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+                  <option value="">所有优先级</option>
+                  <option value="高">🔥 高</option>
+                  <option value="中">⚡ 中</option>
+                  <option value="低">🌱 低</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                  <i class="ri-arrow-down-s-line text-gray-400"></i>
+                </div>
+              </div>
+              
+              <button id="task-templates-btn" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-3 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="ri-file-copy-line sm:mr-1"></i>
+                <span class="hidden sm:inline">模板</span>
+              </button>
+              
+              <button id="clear-filters" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-3 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="ri-refresh-line sm:mr-1"></i>
+                <span class="hidden sm:inline">清除</span>
+              </button>
+            </div>
           </div>
         </div>
         
@@ -287,6 +700,216 @@
       </div>
     </div>
 
+    <div class="tab-content hidden" id="analytics">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold mb-4">📊 数据分析</h2>
+        
+        <!-- Analytics Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">累计任务</p>
+                <p id="analytics-total-tasks" class="text-2xl font-bold">0</p>
+              </div>
+              <div class="text-primary">
+                <i class="ri-task-line text-2xl"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">总时长</p>
+                <p id="analytics-total-time" class="text-2xl font-bold">0h</p>
+              </div>
+              <div class="text-warning">
+                <i class="ri-time-line text-2xl"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">完成率</p>
+                <p id="analytics-completion-rate" class="text-2xl font-bold">0%</p>
+              </div>
+              <div class="text-success">
+                <i class="ri-check-line text-2xl"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">平均效率</p>
+                <p id="analytics-efficiency" class="text-2xl font-bold">0%</p>
+              </div>
+              <div class="text-secondary">
+                <i class="ri-flashlight-line text-2xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Task Categories Chart -->
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-bold mb-4">任务分类分布</h3>
+            <div class="relative">
+              <canvas id="categoriesChart" width="400" height="300"></canvas>
+            </div>
+          </div>
+          
+          <!-- Progress Over Time Chart -->
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-bold mb-4">7日完成趋势</h3>
+            <div class="relative">
+              <canvas id="progressChart" width="400" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Habit Tracking Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Daily Habits -->
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-bold mb-4 flex items-center">
+              <i class="ri-calendar-check-line text-primary mr-2"></i>
+              习惯追踪
+            </h3>
+            
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex items-center">
+                  <span class="text-2xl mr-3">📚</span>
+                  <div>
+                    <p class="font-medium">学习打卡</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">连续 <span id="study-streak">0</span> 天</p>
+                  </div>
+                </div>
+                <div class="flex space-x-1" id="study-habit-dots">
+                  <!-- Habit dots will be populated here -->
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex items-center">
+                  <span class="text-2xl mr-3">💪</span>
+                  <div>
+                    <p class="font-medium">健身打卡</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">连续 <span id="fitness-streak">0</span> 天</p>
+                  </div>
+                </div>
+                <div class="flex space-x-1" id="fitness-habit-dots">
+                  <!-- Habit dots will be populated here -->
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex items-center">
+                  <span class="text-2xl mr-3">📝</span>
+                  <div>
+                    <p class="font-medium">任务完成</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">连续 <span id="task-streak">0</span> 天</p>
+                  </div>
+                </div>
+                <div class="flex space-x-1" id="task-habit-dots">
+                  <!-- Habit dots will be populated here -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Efficiency Analysis -->
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-bold mb-4 flex items-center">
+              <i class="ri-line-chart-line text-primary mr-2"></i>
+              效率分析
+            </h3>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">最佳工作时段</span>
+                  <span id="best-time-slot" class="text-sm text-primary">分析中...</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div id="best-time-bar" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">高效分类</span>
+                  <span id="best-category" class="text-sm text-success">分析中...</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div id="best-category-bar" class="bg-success h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">专注度评分</span>
+                  <span id="focus-score" class="text-sm text-warning">分析中...</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div id="focus-bar" class="bg-warning h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p class="text-sm font-medium mb-2">📈 效率建议</p>
+                <p id="efficiency-tip" class="text-sm text-gray-600 dark:text-gray-300">
+                  完成更多任务以获得个性化分析建议
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Weekly Summary -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h3 class="text-lg font-bold mb-4 flex items-center">
+            <i class="ri-calendar-week-line text-primary mr-2"></i>
+            本周总结
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-primary mb-2" id="week-tasks-completed">0</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">已完成任务</div>
+            </div>
+            
+            <div class="text-center">
+              <div class="text-3xl font-bold text-success mb-2" id="week-hours-spent">0h</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">投入时间</div>
+            </div>
+            
+            <div class="text-center">
+              <div class="text-3xl font-bold text-warning mb-2" id="week-efficiency">0%</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">完成效率</div>
+            </div>
+          </div>
+          
+          <div class="mt-6">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium">本周进度</span>
+              <span id="week-progress-percent" class="text-sm">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+              <div id="week-progress-bar" class="bg-gradient-to-r from-primary to-success h-3 rounded-full" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="tab-content hidden" id="settings">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
         <h2 class="text-lg font-bold mb-6">设置</h2>
@@ -332,7 +955,10 @@
             <h3 class="font-medium mb-3">关于</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">
               任务规划助手 v1.0.0<br>
-              一个帮助您高效管理时间和任务的工具
+              一个帮助您高效管理时间和任务的工具<br>
+              <span class="text-xs mt-2 block">
+                访问地址: <a href="https://nathan123-sudo.github.io/TimeManager/" target="_blank" class="text-primary">https://nathan123-sudo.github.io/TimeManager/</a>
+              </span>
             </p>
           </div>
         </div>
@@ -340,8 +966,8 @@
     </div>
 
     <!-- Add/Edit Task Modal -->
-    <div id="task-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+    <div id="task-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 w-full max-w-md max-h-screen overflow-y-auto">
         <h3 id="modal-title" class="text-lg font-bold mb-4">添加新任务</h3>
         
         <div class="space-y-4">
@@ -450,8 +1076,65 @@
         </div>
       </div>
     </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="ri-cloud-line text-2xl text-primary"></i>
+          </div>
+          <h3 class="text-xl font-bold">云端同步</h3>
+          <p class="text-gray-500 dark:text-gray-400 mt-2">登录账户以启用跨设备数据同步</p>
+        </div>
+        
+        <div id="auth-methods" class="space-y-3">
+          <button id="google-login" class="w-full bg-red-500 text-white rounded-lg px-4 py-3 font-medium hover:bg-red-600 transition-colors flex items-center justify-center">
+            <i class="ri-google-fill mr-2"></i>
+            使用 Google 账户登录
+          </button>
+          
+          <button id="github-login" class="w-full bg-gray-800 text-white rounded-lg px-4 py-3 font-medium hover:bg-gray-900 transition-colors flex items-center justify-center">
+            <i class="ri-github-fill mr-2"></i>
+            使用 GitHub 账户登录
+          </button>
+          
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="bg-white dark:bg-gray-800 px-2 text-gray-500">或使用邮箱</span>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <input id="email-input" type="email" placeholder="输入您的邮箱地址" 
+              class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-3 px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+            <input id="password-input" type="password" placeholder="输入密码" 
+              class="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-3 px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none">
+            
+            <div class="flex space-x-2">
+              <button id="email-login" class="flex-1 bg-primary text-white rounded-lg px-4 py-3 font-medium hover:bg-opacity-90 transition-colors">
+                登录
+              </button>
+              <button id="email-register" class="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-3 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                注册
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center mt-6">
+          <button id="login-modal-close" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">
+            暂时跳过，继续使用本地模式
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- JavaScript部分保持完全相同 -->
   <script>
     // Initialize dark mode
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -742,6 +1425,8 @@
         this.setupEventListeners();
         this.renderDashboard();
         this.setTodayInCheckin();
+        this.loadTimerSettings();
+        this.loadSoundSettings();
       },
       
       // Setup tab navigation
@@ -772,6 +1457,7 @@
             if (tabId === 'tasks') this.renderTasksList();
             if (tabId === 'calendar') this.renderCalendar();
             if (tabId === 'checkin') this.renderCheckin();
+            if (tabId === 'analytics') this.renderAnalytics();
           });
         });
       },
@@ -807,9 +1493,53 @@
         // Confirm modal events
         document.getElementById('confirm-cancel').addEventListener('click', () => this.closeConfirmModal());
         
-        // Category and priority filters
+        // Search and filters
+        document.getElementById('task-search').addEventListener('input', () => this.renderTasksList());
         document.getElementById('category-filter').addEventListener('change', () => this.renderTasksList());
         document.getElementById('priority-filter').addEventListener('change', () => this.renderTasksList());
+        
+        // Templates and clear filters
+        document.getElementById('task-templates-btn').addEventListener('click', () => this.openTemplatesModal());
+        document.getElementById('clear-filters').addEventListener('click', () => this.clearFilters());
+        
+        // Quick actions floating button
+        document.getElementById('quick-fab').addEventListener('click', () => this.toggleQuickMenu());
+        document.getElementById('quick-add-task').addEventListener('click', () => {
+          this.toggleQuickMenu();
+          this.openTaskModal();
+        });
+        document.getElementById('quick-timer').addEventListener('click', () => {
+          this.toggleQuickMenu();
+          this.openTimerModal();
+        });
+        document.getElementById('quick-checkin').addEventListener('click', () => {
+          this.toggleQuickMenu();
+          this.switchToTab('checkin');
+        });
+        document.getElementById('quick-backup').addEventListener('click', () => {
+          this.toggleQuickMenu();
+          this.autoBackup();
+        });
+        
+        // Timer modal events
+        document.getElementById('timer-close').addEventListener('click', () => this.closeTimerModal());
+        document.getElementById('timer-start').addEventListener('click', () => this.startTimer());
+        document.getElementById('timer-pause').addEventListener('click', () => this.pauseTimer());
+        document.getElementById('timer-reset').addEventListener('click', () => this.resetTimer());
+        document.getElementById('timer-settings-toggle').addEventListener('click', () => this.toggleTimerSettings());
+        document.getElementById('apply-timer-settings').addEventListener('click', () => this.applyTimerSettings());
+        document.getElementById('reset-timer-settings').addEventListener('click', () => this.resetTimerSettings());
+        
+        // Sound settings events
+        document.getElementById('sound-enabled-toggle').addEventListener('click', () => this.toggleSoundEnabled());
+        document.getElementById('volume-setting').addEventListener('input', () => this.updateVolumeDisplay());
+        document.getElementById('test-sound').addEventListener('click', () => this.testTimerSound());
+        document.getElementById('sound-type-setting').addEventListener('change', () => this.toggleCustomAudioSection());
+        document.getElementById('custom-audio-file').addEventListener('change', () => this.handleCustomAudioUpload());
+        
+        // Templates modal events
+        document.getElementById('templates-close').addEventListener('click', () => this.closeTemplatesModal());
+        document.getElementById('create-template').addEventListener('click', () => this.createCustomTemplate());
         
         // Calendar navigation
         document.getElementById('prev-month').addEventListener('click', () => this.changeMonth(-1));
@@ -869,6 +1599,12 @@
             }
           );
         });
+        
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+        
+        // Setup drag and drop for tasks
+        this.setupDragAndDrop();
       },
       
       // Render all sections
@@ -1036,11 +1772,21 @@
         const completedHours = DataStore.getCompletedHours();
         
         // Get filter values
+        const searchQuery = document.getElementById('task-search').value.toLowerCase().trim();
         const categoryFilter = document.getElementById('category-filter').value;
         const priorityFilter = document.getElementById('priority-filter').value;
         
         // Filter tasks
         let filteredTasks = [...tasks];
+        
+        // Search filter
+        if (searchQuery) {
+          filteredTasks = filteredTasks.filter(task => 
+            task.name.toLowerCase().includes(searchQuery) ||
+            task.category.toLowerCase().includes(searchQuery) ||
+            task.priority.toLowerCase().includes(searchQuery)
+          );
+        }
         
         if (categoryFilter) {
           filteredTasks = filteredTasks.filter(task => task.category === categoryFilter);
@@ -1119,6 +1865,9 @@
                   </div>
                 </div>
                 <div class="flex space-x-2 mt-2 sm:mt-0">
+                  <button class="drag-handle text-gray-400 hover:text-gray-600 p-1 cursor-grab" title="拖拽排序">
+                    <i class="ri-drag-move-line"></i>
+                  </button>
                   <button class="text-gray-500 hover:text-primary p-1 view-task-btn" data-task="${task.name}">
                     <i class="ri-eye-line"></i>
                   </button>
@@ -1862,7 +2611,2484 @@
         setTimeout(() => {
           statusEl.classList.add('hidden');
         }, 3000);
+      },
+      
+      // Clear all filters
+      clearFilters() {
+        document.getElementById('task-search').value = '';
+        document.getElementById('category-filter').value = '';
+        document.getElementById('priority-filter').value = '';
+        this.renderTasksList();
+      },
+      
+      // Quick actions menu
+      toggleQuickMenu() {
+        const menu = document.getElementById('quick-menu');
+        const fab = document.getElementById('quick-fab');
+        
+        if (menu.classList.contains('hidden')) {
+          menu.classList.remove('hidden');
+          fab.style.transform = 'rotate(45deg)';
+        } else {
+          menu.classList.add('hidden');
+          fab.style.transform = 'rotate(0deg)';
+        }
+      },
+      
+      switchToTab(tabId) {
+        // Find and click the tab button
+        const tabBtn = document.querySelector(`[data-tab="${tabId}"]`);
+        if (tabBtn) {
+          tabBtn.click();
+        }
+      },
+      
+      autoBackup() {
+        try {
+          const data = DataStore.exportData();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `auto-backup-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          
+          this.showNotification('自动备份已完成', 'success');
+        } catch (error) {
+          this.showNotification('自动备份失败', 'error');
+        }
+      },
+      
+      // Pomodoro Timer
+      timerState: {
+        isRunning: false,
+        isPaused: false,
+        currentMode: 'work', // 'work', 'shortBreak', 'longBreak'
+        session: 1,
+        timeLeft: 25 * 60, // 25 minutes in seconds
+        interval: null,
+        settings: {
+          workTime: 25,
+          shortBreak: 5,
+          longBreak: 15,
+          sessionsBeforeLongBreak: 4
+        }
+      },
+      
+      openTimerModal() {
+        document.getElementById('timer-modal').classList.remove('hidden');
+        this.updateTimerDisplay();
+      },
+      
+      closeTimerModal() {
+        document.getElementById('timer-modal').classList.add('hidden');
+        this.pauseTimer();
+      },
+      
+      startTimer() {
+        if (this.timerState.isPaused) {
+          this.resumeTimer();
+          return;
+        }
+        
+        this.timerState.isRunning = true;
+        this.timerState.isPaused = false;
+        
+        document.getElementById('timer-start').classList.add('hidden');
+        document.getElementById('timer-pause').classList.remove('hidden');
+        
+        this.timerState.interval = setInterval(() => {
+          this.timerState.timeLeft--;
+          this.updateTimerDisplay();
+          
+          if (this.timerState.timeLeft <= 0) {
+            this.completeTimerSession();
+          }
+        }, 1000);
+        
+        this.requestNotificationPermission();
+      },
+      
+      pauseTimer() {
+        this.timerState.isPaused = true;
+        if (this.timerState.interval) {
+          clearInterval(this.timerState.interval);
+          this.timerState.interval = null;
+        }
+        
+        document.getElementById('timer-start').classList.remove('hidden');
+        document.getElementById('timer-pause').classList.add('hidden');
+        document.getElementById('timer-start').textContent = '继续';
+      },
+      
+      resumeTimer() {
+        this.timerState.isPaused = false;
+        this.startTimer();
+        document.getElementById('timer-start').textContent = '开始';
+      },
+      
+      resetTimer() {
+        this.timerState.isRunning = false;
+        this.timerState.isPaused = false;
+        
+        if (this.timerState.interval) {
+          clearInterval(this.timerState.interval);
+          this.timerState.interval = null;
+        }
+        
+        // Reset to current mode's default time
+        if (this.timerState.currentMode === 'work') {
+          this.timerState.timeLeft = this.timerState.settings.workTime * 60;
+        } else if (this.timerState.currentMode === 'shortBreak') {
+          this.timerState.timeLeft = this.timerState.settings.shortBreak * 60;
+        } else {
+          this.timerState.timeLeft = this.timerState.settings.longBreak * 60;
+        }
+        
+        document.getElementById('timer-start').classList.remove('hidden');
+        document.getElementById('timer-pause').classList.add('hidden');
+        document.getElementById('timer-start').textContent = '开始';
+        
+        this.updateTimerDisplay();
+      },
+      
+      completeTimerSession() {
+        this.timerState.isRunning = false;
+        
+        if (this.timerState.interval) {
+          clearInterval(this.timerState.interval);
+          this.timerState.interval = null;
+        }
+        
+        // Play sound notification FIRST and IMMEDIATELY
+        this.playRepeatedTimerSound();
+        
+        // Show visual notification
+        this.showTimerNotification();
+        
+        // Move to next phase
+        if (this.timerState.currentMode === 'work') {
+          this.timerState.session++;
+          
+          if (this.timerState.session > this.timerState.settings.sessionsBeforeLongBreak) {
+            // Long break time
+            this.timerState.currentMode = 'longBreak';
+            this.timerState.timeLeft = this.timerState.settings.longBreak * 60;
+            this.timerState.session = 1; // Reset session counter
+          } else {
+            // Short break time
+            this.timerState.currentMode = 'shortBreak';
+            this.timerState.timeLeft = this.timerState.settings.shortBreak * 60;
+          }
+        } else {
+          // Break finished, back to work
+          this.timerState.currentMode = 'work';
+          this.timerState.timeLeft = this.timerState.settings.workTime * 60;
+        }
+        
+        document.getElementById('timer-start').classList.remove('hidden');
+        document.getElementById('timer-pause').classList.add('hidden');
+        document.getElementById('timer-start').textContent = '开始';
+        
+        this.updateTimerDisplay();
+      },
+      
+      updateTimerDisplay() {
+        const minutes = Math.floor(this.timerState.timeLeft / 60);
+        const seconds = this.timerState.timeLeft % 60;
+        
+        document.getElementById('timer-display').textContent = 
+          `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Update mode text
+        let modeText = '';
+        if (this.timerState.currentMode === 'work') {
+          modeText = '工作时间';
+        } else if (this.timerState.currentMode === 'shortBreak') {
+          modeText = '短休息';
+        } else {
+          modeText = '长休息';
+        }
+        document.getElementById('timer-mode').textContent = modeText;
+        
+        // Update session counter
+        document.getElementById('timer-sessions').textContent = 
+          `${this.timerState.session}/${this.timerState.settings.sessionsBeforeLongBreak}`;
+        
+        // Update progress bar
+        let totalTime = 0;
+        if (this.timerState.currentMode === 'work') {
+          totalTime = this.timerState.settings.workTime * 60;
+        } else if (this.timerState.currentMode === 'shortBreak') {
+          totalTime = this.timerState.settings.shortBreak * 60;
+        } else {
+          totalTime = this.timerState.settings.longBreak * 60;
+        }
+        
+        const progress = ((totalTime - this.timerState.timeLeft) / totalTime) * 100;
+        document.getElementById('timer-progress').style.width = `${progress}%`;
+      },
+      
+      requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+      },
+      
+      showTimerNotification() {
+        const message = this.timerState.currentMode === 'work' ? 
+          '🍅 工作时间结束！该休息了～' : 
+          '⏰ 休息时间结束！继续加油工作吧！';
+        
+        // Browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('番茄钟提醒', {
+            body: message,
+            icon: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzVENUNERSIgZD0iTTEyIDJDNi41IDIgMiA2LjUgMiAxMnM0LjUgMTAgMTAgMTAgMTAtNC41IDEwLTEwUzE3LjUgMiAxMiAyek0xMCAyMGMtNC40IDAtOC0zLjYtOC04czMuNi04IDgtOCA4IDMuNiA4IDgtMy42IDgtOCA4em0xMi0xMGMwIDEuMi0wLjMgMi40LTAuOCAzLjVsMS40IDEuNGMwLjctMS41IDEuMS0zLjIgMS4xLTQuOXMtMC40LTMuNC0xLjEtNC45bC0xLjQgMS40YzAuNSAxLjEgMC44IDIuMyAwLjggMy41ek0xMC45IDE2LjkgMTUuNSA5bC0xLjgtMSAtNC42IDcuOUw2LjQgMTMgNSAxNC43bDQuMiAzLjggMS43LTEuNnoiLz48L3N2Zz4='
+          });
+        }
+        
+        // Visual notification
+        this.showNotification(message, 'success');
+        
+        // Play sound notification
+        this.playTimerSound();
+      },
+      
+      // Task Templates System
+      predefinedTemplates: [
+        {
+          id: 'daily-study',
+          name: '📚 每日学习计划',
+          description: '适合学生或自学者的日常学习安排',
+          tasks: [
+            {
+              name: '上午学习时段',
+              category: '📖 学习任务',
+              priority: '高',
+              estimatedHours: 3,
+              timeRange: ['09:00', '12:00']
+            },
+            {
+              name: '下午复习时段',
+              category: '📖 学习任务',
+              priority: '中',
+              estimatedHours: 2,
+              timeRange: ['14:00', '16:00']
+            },
+            {
+              name: '晚间总结',
+              category: '📖 学习任务',
+              priority: '低',
+              estimatedHours: 1,
+              timeRange: ['19:00', '20:00']
+            }
+          ]
+        },
+        {
+          id: 'work-week',
+          name: '💼 工作周计划',
+          description: '标准工作日任务安排模板',
+          tasks: [
+            {
+              name: '上午核心工作',
+              category: '📁 其他任务',
+              priority: '高',
+              estimatedHours: 4,
+              timeRange: ['09:00', '13:00']
+            },
+            {
+              name: '下午项目推进',
+              category: '📁 其他任务',
+              priority: '中',
+              estimatedHours: 3,
+              timeRange: ['14:00', '17:00']
+            },
+            {
+              name: '邮件处理',
+              category: '📁 其他任务',
+              priority: '低',
+              estimatedHours: 1,
+              timeRange: ['17:00', '18:00']
+            }
+          ]
+        },
+        {
+          id: 'fitness-routine',
+          name: '💪 健身计划',
+          description: '每周健身训练安排',
+          tasks: [
+            {
+              name: '力量训练',
+              category: '💪 健身任务',
+              priority: '高',
+              estimatedHours: 1.5,
+              timeRange: ['18:00', '19:30']
+            },
+            {
+              name: '有氧运动',
+              category: '💪 健身任务',
+              priority: '中',
+              estimatedHours: 1,
+              timeRange: ['19:30', '20:30']
+            }
+          ]
+        },
+        {
+          id: 'research-paper',
+          name: '📝 论文写作',
+          description: '学术论文完成流程',
+          tasks: [
+            {
+              name: '文献调研',
+              category: '📚 论文任务',
+              priority: '高',
+              estimatedHours: 4,
+              timeRange: ['09:00', '13:00']
+            },
+            {
+              name: '数据分析',
+              category: '📚 论文任务',
+              priority: '高',
+              estimatedHours: 3,
+              timeRange: ['14:00', '17:00']
+            },
+            {
+              name: '论文撰写',
+              category: '📚 论文任务',
+              priority: '高',
+              estimatedHours: 5,
+              timeRange: ['09:00', '14:00']
+            }
+          ]
+        }
+      ],
+      
+      openTemplatesModal() {
+        const modal = document.getElementById('templates-modal');
+        modal.classList.remove('hidden');
+        this.renderTemplates();
+      },
+      
+      closeTemplatesModal() {
+        document.getElementById('templates-modal').classList.add('hidden');
+      },
+      
+      renderTemplates() {
+        const templatesGrid = document.getElementById('templates-grid');
+        const customTemplatesGrid = document.getElementById('custom-templates-grid');
+        
+        // Render predefined templates
+        templatesGrid.innerHTML = '';
+        this.predefinedTemplates.forEach(template => {
+          const templateCard = document.createElement('div');
+          templateCard.className = 'border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors';
+          
+          templateCard.innerHTML = `
+            <h5 class="font-medium mb-2">${template.name}</h5>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">${template.description}</p>
+            <div class="text-xs text-gray-400 mb-3">
+              包含 ${template.tasks.length} 个任务
+            </div>
+            <button class="w-full bg-primary text-white rounded-lg py-2 text-sm hover:bg-opacity-90 transition-colors use-template-btn" 
+              data-template-id="${template.id}">
+              使用此模板
+            </button>
+          `;
+          
+          templateCard.querySelector('.use-template-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.useTemplate(template.id);
+          });
+          
+          templatesGrid.appendChild(templateCard);
+        });
+        
+        // Render custom templates
+        customTemplatesGrid.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm col-span-full">暂无自定义模板</p>';
+      },
+      
+      useTemplate(templateId) {
+        const template = this.predefinedTemplates.find(t => t.id === templateId);
+        if (!template) return;
+        
+        this.openConfirmModal(
+          `确定要使用"${template.name}"模板吗？这将为接下来的几天创建 ${template.tasks.length} 个任务。`,
+          () => {
+            this.createTasksFromTemplate(template);
+            this.closeTemplatesModal();
+          }
+        );
+      },
+      
+      createTasksFromTemplate(template) {
+        const today = new Date();
+        let successCount = 0;
+        
+        template.tasks.forEach((taskTemplate, index) => {
+          const startDate = new Date(today);
+          startDate.setDate(today.getDate() + index); // Spread tasks across consecutive days
+          
+          const endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 2); // Each task lasts 3 days by default
+          
+          const task = {
+            name: taskTemplate.name,
+            start: startDate.toISOString().split('T')[0],
+            end: endDate.toISOString().split('T')[0],
+            estimatedHours: taskTemplate.estimatedHours,
+            timeRange: taskTemplate.timeRange,
+            category: taskTemplate.category,
+            priority: taskTemplate.priority
+          };
+          
+          // Check for duplicate names and modify if needed
+          const existingTasks = DataStore.getTasks();
+          let taskName = task.name;
+          let counter = 1;
+          while (existingTasks.some(t => t.name === taskName)) {
+            taskName = `${task.name} (${counter})`;
+            counter++;
+          }
+          task.name = taskName;
+          
+          if (DataStore.saveTask(task)) {
+            successCount++;
+          }
+        });
+        
+        this.renderAll();
+        this.showNotification(`已从模板创建 ${successCount} 个任务`, 'success');
+      },
+      
+      createCustomTemplate() {
+        this.showNotification('自定义模板功能开发中，敬请期待！', 'info');
+      },
+      
+      // Keyboard shortcuts setup
+      setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+          // Skip if user is typing in an input field
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.contentEditable === 'true') {
+            return;
+          }
+          
+          // Ctrl/Cmd combinations
+          if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+              case 'n':
+                e.preventDefault();
+                this.openTaskModal();
+                this.showNotification('快捷键: Ctrl+N - 新建任务', 'info');
+                break;
+              case 's':
+                e.preventDefault();
+                this.autoBackup();
+                this.showNotification('快捷键: Ctrl+S - 自动备份', 'info');
+                break;
+              case 'f':
+                e.preventDefault();
+                document.getElementById('task-search').focus();
+                this.showNotification('快捷键: Ctrl+F - 搜索任务', 'info');
+                break;
+              case 't':
+                e.preventDefault();
+                this.openTimerModal();
+                this.showNotification('快捷键: Ctrl+T - 番茄钟', 'info');
+                break;
+            }
+          }
+          
+          // Tab navigation shortcuts
+          if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+            switch (e.key) {
+              case '1':
+                e.preventDefault();
+                this.switchToTab('dashboard');
+                this.showNotification('快捷键: 1 - 概览页面', 'info');
+                break;
+              case '2':
+                e.preventDefault();
+                this.switchToTab('tasks');
+                this.showNotification('快捷键: 2 - 任务管理', 'info');
+                break;
+              case '3':
+                e.preventDefault();
+                this.switchToTab('calendar');
+                this.showNotification('快捷键: 3 - 日历视图', 'info');
+                break;
+              case '4':
+                e.preventDefault();
+                this.switchToTab('checkin');
+                this.showNotification('快捷键: 4 - 每日打卡', 'info');
+                break;
+              case '5':
+                e.preventDefault();
+                this.switchToTab('settings');
+                this.showNotification('快捷键: 5 - 设置页面', 'info');
+                break;
+              case 'Escape':
+                // Close any open modals
+                this.closeTaskModal();
+                this.closeDetailsModal();
+                this.closeConfirmModal();
+                this.closeTemplatesModal();
+                this.closeTimerModal();
+                
+                // Close quick menu
+                const quickMenu = document.getElementById('quick-menu');
+                if (!quickMenu.classList.contains('hidden')) {
+                  this.toggleQuickMenu();
+                }
+                break;
+            }
+          }
+        });
+        
+        // Show shortcuts hint on first load
+        setTimeout(() => {
+          this.showNotification('💡 快捷键提示: Ctrl+N新建, Ctrl+T番茄钟, 1-5切换页面, Ctrl+F搜索, Ctrl+S备份', 'info');
+        }, 2000);
+      },
+      
+      // Drag and drop setup
+      setupDragAndDrop() {
+        // Wait for tasks list to be rendered
+        setTimeout(() => {
+          const tasksList = document.getElementById('tasks-list');
+          if (tasksList && typeof Sortable !== 'undefined') {
+            this.sortableInstance = Sortable.create(tasksList, {
+              animation: 150,
+              ghostClass: 'sortable-ghost',
+              dragClass: 'sortable-drag',
+              chosenClass: 'sortable-chosen',
+              
+              // Only allow dragging by the drag handle
+              handle: '.drag-handle',
+              
+              onStart: (evt) => {
+                // Add visual feedback
+                document.body.style.cursor = 'grabbing';
+                evt.item.classList.add('opacity-80');
+              },
+              
+              onEnd: (evt) => {
+                // Remove visual feedback
+                document.body.style.cursor = '';
+                evt.item.classList.remove('opacity-80');
+                
+                // Update task order in storage
+                this.updateTaskOrder();
+                this.showNotification('任务顺序已更新', 'success');
+              }
+            });
+            
+            // Add drag handles to existing tasks
+            this.addDragHandles();
+          }
+        }, 100);
+      },
+      
+      addDragHandles() {
+        const taskElements = document.querySelectorAll('#tasks-list > div');
+        taskElements.forEach(taskEl => {
+          // Check if drag handle already exists
+          if (taskEl.querySelector('.drag-handle')) return;
+          
+          // Find the action buttons container
+          const actionContainer = taskEl.querySelector('.flex.space-x-2');
+          if (actionContainer) {
+            // Create drag handle
+            const dragHandle = document.createElement('button');
+            dragHandle.className = 'drag-handle text-gray-400 hover:text-gray-600 p-1 cursor-grab active:cursor-grabbing';
+            dragHandle.innerHTML = '<i class="ri-drag-move-line"></i>';
+            dragHandle.title = '拖拽排序';
+            
+            // Insert drag handle at the beginning
+            actionContainer.insertBefore(dragHandle, actionContainer.firstChild);
+          }
+        });
+      },
+      
+      updateTaskOrder() {
+        const taskElements = document.querySelectorAll('#tasks-list > div');
+        const tasks = DataStore.getTasks();
+        const orderedTasks = [];
+        
+        // Get current order from DOM
+        taskElements.forEach(taskEl => {
+          const taskName = taskEl.querySelector('h3').textContent;
+          const task = tasks.find(t => t.name === taskName);
+          if (task) {
+            orderedTasks.push(task);
+          }
+        });
+        
+        // Save reordered tasks
+        if (orderedTasks.length > 0) {
+          DataStore.store(DataStore.TASKS_KEY, orderedTasks);
+        }
+      },
+      
+      // Timer settings methods
+      toggleTimerSettings() {
+        const settingsPanel = document.getElementById('timer-settings');
+        settingsPanel.classList.toggle('hidden');
+      },
+      
+      applyTimerSettings() {
+        const workTime = parseInt(document.getElementById('work-time-setting').value);
+        const shortBreak = parseInt(document.getElementById('short-break-setting').value);
+        const longBreak = parseInt(document.getElementById('long-break-setting').value);
+        const sessions = parseInt(document.getElementById('sessions-setting').value);
+        
+        // Validate inputs
+        if (workTime < 1 || workTime > 120) {
+          this.showNotification('工作时间必须在1-120分钟之间', 'error');
+          return;
+        }
+        
+        if (shortBreak < 1 || shortBreak > 60) {
+          this.showNotification('短休息时间必须在1-60分钟之间', 'error');
+          return;
+        }
+        
+        if (longBreak < 1 || longBreak > 120) {
+          this.showNotification('长休息时间必须在1-120分钟之间', 'error');
+          return;
+        }
+        
+        if (sessions < 1 || sessions > 10) {
+          this.showNotification('长休息间隔必须在1-10之间', 'error');
+          return;
+        }
+        
+        // Update timer settings
+        this.timerState.settings.workTime = workTime;
+        this.timerState.settings.shortBreak = shortBreak;
+        this.timerState.settings.longBreak = longBreak;
+        this.timerState.settings.sessionsBeforeLongBreak = sessions;
+        
+        // Reset current timer if not running
+        if (!this.timerState.isRunning) {
+          this.resetTimer();
+        }
+        
+        // Save settings to localStorage
+        try {
+          localStorage.setItem('pomodoroSettings', JSON.stringify(this.timerState.settings));
+        } catch (error) {
+          console.log('Could not save timer settings');
+        }
+        
+        this.showNotification('计时器设置已更新', 'success');
+        this.toggleTimerSettings();
+      },
+      
+      resetTimerSettings() {
+        // Reset to default values
+        const defaultSettings = {
+          workTime: 25,
+          shortBreak: 5,
+          longBreak: 15,
+          sessionsBeforeLongBreak: 4
+        };
+        
+        document.getElementById('work-time-setting').value = defaultSettings.workTime;
+        document.getElementById('short-break-setting').value = defaultSettings.shortBreak;
+        document.getElementById('long-break-setting').value = defaultSettings.longBreak;
+        document.getElementById('sessions-setting').value = defaultSettings.sessionsBeforeLongBreak;
+        
+        this.timerState.settings = { ...defaultSettings };
+        
+        // Reset current timer if not running
+        if (!this.timerState.isRunning) {
+          this.resetTimer();
+        }
+        
+        // Clear saved settings
+        try {
+          localStorage.removeItem('pomodoroSettings');
+        } catch (error) {
+          console.log('Could not clear timer settings');
+        }
+        
+        this.showNotification('计时器设置已重置为默认值', 'success');
+      },
+      
+      // Custom audio functionality
+      toggleCustomAudioSection() {
+        const soundType = document.getElementById('sound-type-setting').value;
+        const customSection = document.getElementById('custom-audio-section');
+        
+        if (soundType === 'custom') {
+          customSection.classList.remove('hidden');
+        } else {
+          customSection.classList.add('hidden');
+        }
+        
+        this.saveSoundSettings();
+      },
+      
+      handleCustomAudioUpload() {
+        const fileInput = document.getElementById('custom-audio-file');
+        const file = fileInput.files[0];
+        
+        if (!file) return;
+        
+        // Validate file type
+        const validTypes = ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/aac'];
+        if (!validTypes.some(type => file.type === type || file.name.toLowerCase().endsWith('.' + type.split('/')[1]))) {
+          this.showNotification('请选择有效的音频文件 (MP3, WAV, OGG, M4A, AAC)', 'error');
+          fileInput.value = '';
+          return;
+        }
+        
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          this.showNotification('音频文件大小不能超过 5MB', 'error');
+          fileInput.value = '';
+          return;
+        }
+        
+        // Create audio element
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            if (this.customAudioElement) {
+              this.customAudioElement.pause();
+              URL.revokeObjectURL(this.customAudioElement.src);
+            }
+            
+            this.customAudioElement = new Audio();
+            this.customAudioElement.src = e.target.result;
+            this.customAudioElement.preload = 'auto';
+            
+            // Test if audio can be loaded
+            this.customAudioElement.addEventListener('loadeddata', () => {
+              this.showNotification('自定义音频已上传成功', 'success');
+            }, { once: true });
+            
+            this.customAudioElement.addEventListener('error', () => {
+              this.showNotification('音频文件格式不受支持', 'error');
+              fileInput.value = '';
+              this.customAudioElement = null;
+            }, { once: true });
+            
+            // Load the audio
+            this.customAudioElement.load();
+            
+          } catch (error) {
+            this.showNotification('上传音频文件时出错', 'error');
+            fileInput.value = '';
+          }
+        };
+        
+        reader.onerror = () => {
+          this.showNotification('读取音频文件时出错', 'error');
+          fileInput.value = '';
+        };
+        
+        reader.readAsDataURL(file);
+      },
+      
+      // Sound functionality
+      audioContext: null,
+      soundSettings: {
+        enabled: true,
+        type: 'beep',
+        volume: 0.7
+      },
+      
+      initAudioContext() {
+        if (!this.audioContext) {
+          try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          } catch (error) {
+            console.log('Could not create audio context');
+          }
+        }
+      },
+      
+      // Repeated sound functionality for timer alerts
+      currentSoundInterval: null,
+      customAudioElement: null,
+      
+      playRepeatedTimerSound() {
+        // Check if sound is enabled
+        if (!this.soundSettings.enabled) return;
+        
+        try {
+          this.initAudioContext();
+          if (!this.audioContext) return;
+          
+          // Resume audio context if suspended
+          if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+          }
+          
+          const repeatCount = document.getElementById('repeat-count-setting').value;
+          const soundType = this.soundSettings.type;
+          const volume = this.soundSettings.volume;
+          
+          // Clear any existing sound interval
+          if (this.currentSoundInterval) {
+            clearInterval(this.currentSoundInterval);
+            this.currentSoundInterval = null;
+          }
+          
+          // Play first sound immediately
+          this.playSound(soundType, volume);
+          
+          if (repeatCount === 'continuous') {
+            // Continuous play until stopped
+            this.currentSoundInterval = setInterval(() => {
+              this.playSound(soundType, volume);
+            }, 2000); // Play every 2 seconds
+            
+            // Auto-stop after 30 seconds to prevent infinite loop
+            setTimeout(() => {
+              if (this.currentSoundInterval) {
+                clearInterval(this.currentSoundInterval);
+                this.currentSoundInterval = null;
+              }
+            }, 30000);
+            
+          } else {
+            // Play specific number of times
+            const times = parseInt(repeatCount);
+            let count = 1;
+            
+            if (times > 1) {
+              this.currentSoundInterval = setInterval(() => {
+                if (count < times) {
+                  this.playSound(soundType, volume);
+                  count++;
+                } else {
+                  clearInterval(this.currentSoundInterval);
+                  this.currentSoundInterval = null;
+                }
+              }, 1500); // Play every 1.5 seconds
+            }
+          }
+          
+        } catch (error) {
+          console.log('Could not play timer sound:', error);
+        }
+      },
+      
+      playTimerSound() {
+        // This is used for testing - single play
+        const soundType = this.soundSettings.type;
+        const volume = this.soundSettings.volume;
+        this.playSound(soundType, volume);
+      },
+      
+      playSound(type, volume) {
+        if (type === 'custom' && this.customAudioElement) {
+          // Play custom audio file
+          this.customAudioElement.volume = volume;
+          this.customAudioElement.currentTime = 0;
+          this.customAudioElement.play().catch(e => {
+            console.log('Could not play custom audio:', e);
+            // Fallback to generated sound
+            this.generateSound('beep', volume);
+          });
+        } else {
+          // Generate synthesized sound
+          this.generateSound(type, volume);
+        }
+      },
+      
+      generateSound(type, volume) {
+        const currentTime = this.audioContext.currentTime;
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        // Connect nodes
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        // Set volume
+        gainNode.gain.setValueAtTime(0, currentTime);
+        gainNode.gain.linearRampToValueAtTime(volume, currentTime + 0.01);
+        
+        // Generate different sound types
+        switch (type) {
+          case 'beep':
+            // Classic beep sound
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.5);
+            break;
+            
+          case 'chime':
+            // Elegant chime sound
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(523, currentTime); // C5
+            oscillator.frequency.setValueAtTime(659, currentTime + 0.2); // E5
+            oscillator.frequency.setValueAtTime(784, currentTime + 0.4); // G5
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 1);
+            break;
+            
+          case 'bell':
+            // Clear bell sound
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(1000, currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 1.5);
+            break;
+            
+          case 'ding':
+            // Simple ding sound
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(1200, currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.3);
+            break;
+            
+          case 'alarm':
+            // Strong alarm sound
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(440, currentTime);
+            oscillator.frequency.setValueAtTime(880, currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(440, currentTime + 0.2);
+            oscillator.frequency.setValueAtTime(880, currentTime + 0.3);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.8);
+            break;
+            
+          case 'melody':
+            // Happy melody
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(261, currentTime); // C4
+            oscillator.frequency.setValueAtTime(329, currentTime + 0.15); // E4
+            oscillator.frequency.setValueAtTime(392, currentTime + 0.3); // G4
+            oscillator.frequency.setValueAtTime(523, currentTime + 0.45); // C5
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 1.2);
+            break;
+            
+          case 'nature':
+            // Bird-like chirp sound
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(2000, currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(3000, currentTime + 0.1);
+            oscillator.frequency.exponentialRampToValueAtTime(1500, currentTime + 0.2);
+            oscillator.frequency.exponentialRampToValueAtTime(2500, currentTime + 0.3);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.6);
+            break;
+            
+          case 'digital':
+            // Digital beep sequence
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(1000, currentTime);
+            oscillator.frequency.setValueAtTime(1200, currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(1000, currentTime + 0.2);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.4);
+            break;
+            
+          default:
+            // Default to beep
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.5);
+        }
+        
+        // Start and stop the sound
+        oscillator.start(currentTime);
+        oscillator.stop(currentTime + (type === 'chime' ? 1 : type === 'bell' ? 1.5 : 0.5));
+      },
+      
+      testTimerSound() {
+        const soundType = document.getElementById('sound-type-setting').value;
+        const volume = parseFloat(document.getElementById('volume-setting').value) / 100;
+        
+        try {
+          this.initAudioContext();
+          if (!this.audioContext) {
+            this.showNotification('您的浏览器不支持音频播放', 'error');
+            return;
+          }
+          
+          // Resume audio context if suspended
+          if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+          }
+          
+          this.generateSound(soundType, volume);
+          
+        } catch (error) {
+          console.log('Could not test sound:', error);
+          this.showNotification('无法播放测试音频', 'error');
+        }
+      },
+      
+      toggleSoundEnabled() {
+        const toggle = document.getElementById('sound-enabled-toggle');
+        const circle = toggle.querySelector('.sound-toggle-circle');
+        
+        this.soundSettings.enabled = !this.soundSettings.enabled;
+        
+        if (this.soundSettings.enabled) {
+          toggle.classList.remove('bg-gray-400');
+          toggle.classList.add('bg-primary');
+          circle.style.transform = 'translateX(24px)';
+        } else {
+          toggle.classList.remove('bg-primary');
+          toggle.classList.add('bg-gray-400');
+          circle.style.transform = 'translateX(0px)';
+        }
+        
+        this.saveSoundSettings();
+      },
+      
+      updateVolumeDisplay() {
+        const volume = document.getElementById('volume-setting').value;
+        document.getElementById('volume-display').textContent = volume;
+        this.soundSettings.volume = parseFloat(volume) / 100;
+        this.saveSoundSettings();
+      },
+      
+      saveSoundSettings() {
+        const soundType = document.getElementById('sound-type-setting').value;
+        this.soundSettings.type = soundType;
+        
+        try {
+          localStorage.setItem('timerSoundSettings', JSON.stringify(this.soundSettings));
+        } catch (error) {
+          console.log('Could not save sound settings');
+        }
+      },
+      
+      loadSoundSettings() {
+        try {
+          const savedSoundSettings = localStorage.getItem('timerSoundSettings');
+          if (savedSoundSettings) {
+            const settings = JSON.parse(savedSoundSettings);
+            this.soundSettings = { ...this.soundSettings, ...settings };
+            
+            // Update UI
+            const toggle = document.getElementById('sound-enabled-toggle');
+            const circle = toggle.querySelector('.sound-toggle-circle');
+            
+            if (this.soundSettings.enabled) {
+              toggle.classList.remove('bg-gray-400');
+              toggle.classList.add('bg-primary');
+              circle.style.transform = 'translateX(24px)';
+            } else {
+              toggle.classList.remove('bg-primary');
+              toggle.classList.add('bg-gray-400');
+              circle.style.transform = 'translateX(0px)';
+            }
+            
+            document.getElementById('sound-type-setting').value = this.soundSettings.type;
+            document.getElementById('volume-setting').value = Math.round(this.soundSettings.volume * 100);
+            document.getElementById('volume-display').textContent = Math.round(this.soundSettings.volume * 100);
+          }
+        } catch (error) {
+          console.log('Could not load sound settings');
+        }
+      },
+      
+      // Load timer settings on init
+      loadTimerSettings() {
+        try {
+          const savedSettings = localStorage.getItem('pomodoroSettings');
+          if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            this.timerState.settings = { ...this.timerState.settings, ...settings };
+            
+            // Update form inputs
+            document.getElementById('work-time-setting').value = settings.workTime || 25;
+            document.getElementById('short-break-setting').value = settings.shortBreak || 5;
+            document.getElementById('long-break-setting').value = settings.longBreak || 15;
+            document.getElementById('sessions-setting').value = settings.sessionsBeforeLongBreak || 4;
+          }
+        } catch (error) {
+          console.log('Could not load timer settings');
+        }
+      },
+      
+      // Analytics rendering
+      renderAnalytics() {
+        const tasks = DataStore.getTasks();
+        const completedHours = DataStore.getCompletedHours();
+        const feedback = DataStore.getFeedback();
+        
+        this.renderAnalyticsOverview(tasks, completedHours);
+        this.renderCharts(tasks, completedHours);
+        this.renderHabitTracking(tasks, completedHours, feedback);
+        this.renderEfficiencyAnalysis(tasks, completedHours, feedback);
+        this.renderWeeklySummary(tasks, completedHours);
+      },
+      
+      renderAnalyticsOverview(tasks, completedHours) {
+        const stats = TaskScheduler.getTaskStats(tasks);
+        const progress = TaskScheduler.getProgressStats(tasks, completedHours);
+        
+        // Update analytics cards
+        document.getElementById('analytics-total-tasks').textContent = stats.total;
+        document.getElementById('analytics-total-time').textContent = `${progress.total}h`;
+        document.getElementById('analytics-completion-rate').textContent = `${progress.percentage}%`;
+        
+        // Calculate average efficiency
+        const avgEfficiency = tasks.length > 0 ? Math.round(progress.percentage * 0.8) : 0;
+        document.getElementById('analytics-efficiency').textContent = `${avgEfficiency}%`;
+      },
+      
+      renderCharts(tasks, completedHours) {
+        // Only render charts if Chart.js is available
+        if (typeof Chart === 'undefined') return;
+        
+        this.renderCategoriesChart(tasks);
+        this.renderProgressChart(tasks, completedHours);
+      },
+      
+      renderCategoriesChart(tasks) {
+        const canvas = document.getElementById('categoriesChart');
+        if (!canvas) return;
+        
+        // Destroy existing chart
+        if (this.categoriesChart) {
+          this.categoriesChart.destroy();
+        }
+        
+        const categoryStats = TaskScheduler.getCategoryStats(tasks);
+        const labels = Object.keys(categoryStats);
+        const data = Object.values(categoryStats).map(stat => stat.count);
+        
+        const colors = [
+          '#5D5CDE', '#10B981', '#F59E0B', '#EF4444', 
+          '#6366F1', '#8B5CF6', '#EC4899', '#06B6D4'
+        ];
+        
+        this.categoriesChart = new Chart(canvas, {
+          type: 'doughnut',
+          data: {
+            labels: labels.length > 0 ? labels : ['暂无数据'],
+            datasets: [{
+              data: data.length > 0 ? data : [1],
+              backgroundColor: colors.slice(0, labels.length > 0 ? labels.length : 1),
+              borderWidth: 0,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  usePointStyle: true,
+                  padding: 15,
+                  font: {
+                    size: 12
+                  }
+                }
+              }
+            }
+          }
+        });
+      },
+      
+      renderProgressChart(tasks, completedHours) {
+        const canvas = document.getElementById('progressChart');
+        if (!canvas) return;
+        
+        // Destroy existing chart
+        if (this.progressChart) {
+          this.progressChart.destroy();
+        }
+        
+        // Get last 7 days data
+        const days = [];
+        const plannedHours = [];
+        const completedHoursData = [];
+        
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          
+          days.push(dateStr.slice(5)); // MM-DD format
+          
+          const schedule = TaskScheduler.scheduleTasks(tasks);
+          const dayTasks = schedule[dateStr] || [];
+          
+          let dayPlanned = 0;
+          let dayCompleted = 0;
+          
+          dayTasks.forEach(task => {
+            const taskId = `${dateStr}-${task.name}`;
+            const taskHours = parseFloat(task.hours);
+            dayPlanned += taskHours;
+            dayCompleted += Math.min(parseFloat(completedHours[taskId] || 0), taskHours);
+          });
+          
+          plannedHours.push(dayPlanned);
+          completedHoursData.push(dayCompleted);
+        }
+        
+        this.progressChart = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: days,
+            datasets: [
+              {
+                label: '计划时间',
+                data: plannedHours,
+                borderColor: '#5D5CDE',
+                backgroundColor: 'rgba(93, 92, 222, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+              },
+              {
+                label: '完成时间',
+                data: completedHoursData,
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: '小时'
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  usePointStyle: true,
+                  padding: 20
+                }
+              }
+            }
+          }
+        });
+      },
+      
+      renderHabitTracking(tasks, completedHours, feedback) {
+        // Calculate habit streaks
+        this.calculateHabitStreaks(tasks, completedHours, feedback);
+        
+        // Render habit dots for the last 14 days
+        this.renderHabitDots('study-habit-dots', this.getStudyHabitData(tasks, completedHours));
+        this.renderHabitDots('fitness-habit-dots', this.getFitnessHabitData(tasks, completedHours));
+        this.renderHabitDots('task-habit-dots', this.getTaskHabitData(tasks, completedHours));
+      },
+      
+      calculateHabitStreaks(tasks, completedHours, feedback) {
+        const today = new Date();
+        
+        // Study streak
+        let studyStreak = 0;
+        for (let i = 0; i < 30; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          
+          if (this.hasStudyActivity(dateStr, tasks, completedHours)) {
+            studyStreak++;
+          } else {
+            break;
+          }
+        }
+        
+        // Fitness streak
+        let fitnessStreak = 0;
+        for (let i = 0; i < 30; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          
+          if (this.hasFitnessActivity(dateStr, tasks, completedHours)) {
+            fitnessStreak++;
+          } else {
+            break;
+          }
+        }
+        
+        // Task completion streak
+        let taskStreak = 0;
+        for (let i = 0; i < 30; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          
+          if (this.hasTaskCompletion(dateStr, tasks, completedHours)) {
+            taskStreak++;
+          } else {
+            break;
+          }
+        }
+        
+        document.getElementById('study-streak').textContent = studyStreak;
+        document.getElementById('fitness-streak').textContent = fitnessStreak;
+        document.getElementById('task-streak').textContent = taskStreak;
+      },
+      
+      hasStudyActivity(dateStr, tasks, completedHours) {
+        const schedule = TaskScheduler.scheduleTasks(tasks);
+        const dayTasks = schedule[dateStr] || [];
+        
+        return dayTasks.some(task => {
+          if (task.category.includes('学习') || task.category.includes('论文')) {
+            const taskId = `${dateStr}-${task.name}`;
+            const completed = parseFloat(completedHours[taskId] || 0);
+            return completed > 0;
+          }
+          return false;
+        });
+      },
+      
+      hasFitnessActivity(dateStr, tasks, completedHours) {
+        const schedule = TaskScheduler.scheduleTasks(tasks);
+        const dayTasks = schedule[dateStr] || [];
+        
+        return dayTasks.some(task => {
+          if (task.category.includes('健身')) {
+            const taskId = `${dateStr}-${task.name}`;
+            const completed = parseFloat(completedHours[taskId] || 0);
+            return completed > 0;
+          }
+          return false;
+        });
+      },
+      
+      hasTaskCompletion(dateStr, tasks, completedHours) {
+        const schedule = TaskScheduler.scheduleTasks(tasks);
+        const dayTasks = schedule[dateStr] || [];
+        
+        let totalHours = 0;
+        let completedTotal = 0;
+        
+        dayTasks.forEach(task => {
+          const taskId = `${dateStr}-${task.name}`;
+          const taskHours = parseFloat(task.hours);
+          totalHours += taskHours;
+          completedTotal += Math.min(parseFloat(completedHours[taskId] || 0), taskHours);
+        });
+        
+        return totalHours > 0 && (completedTotal / totalHours) >= 0.7; // 70% completion
+      },
+      
+      getStudyHabitData(tasks, completedHours) {
+        const data = [];
+        for (let i = 13; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          data.push(this.hasStudyActivity(dateStr, tasks, completedHours));
+        }
+        return data;
+      },
+      
+      getFitnessHabitData(tasks, completedHours) {
+        const data = [];
+        for (let i = 13; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          data.push(this.hasFitnessActivity(dateStr, tasks, completedHours));
+        }
+        return data;
+      },
+      
+      getTaskHabitData(tasks, completedHours) {
+        const data = [];
+        for (let i = 13; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          data.push(this.hasTaskCompletion(dateStr, tasks, completedHours));
+        }
+        return data;
+      },
+      
+      renderHabitDots(containerId, habitData) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        habitData.forEach((hasActivity, index) => {
+          const dot = document.createElement('div');
+          dot.className = `w-3 h-3 rounded-full ${hasActivity ? 'bg-success' : 'bg-gray-300 dark:bg-gray-600'}`;
+          dot.title = `${14 - index} 天前`;
+          container.appendChild(dot);
+        });
+      },
+      
+      renderEfficiencyAnalysis(tasks, completedHours, feedback) {
+        // Analyze best time slots
+        const timeSlotAnalysis = this.analyzeTimeSlots(tasks, completedHours);
+        const bestTimeSlot = timeSlotAnalysis.bestSlot;
+        const bestTimeEfficiency = timeSlotAnalysis.efficiency;
+        
+        document.getElementById('best-time-slot').textContent = bestTimeSlot;
+        document.getElementById('best-time-bar').style.width = `${bestTimeEfficiency}%`;
+        
+        // Analyze best categories
+        const categoryAnalysis = this.analyzeBestCategory(tasks, completedHours);
+        const bestCategory = categoryAnalysis.category;
+        const categoryEfficiency = categoryAnalysis.efficiency;
+        
+        document.getElementById('best-category').textContent = bestCategory;
+        document.getElementById('best-category-bar').style.width = `${categoryEfficiency}%`;
+        
+        // Calculate focus score based on feedback
+        const focusScore = this.calculateFocusScore(feedback);
+        document.getElementById('focus-score').textContent = `${focusScore}分`;
+        document.getElementById('focus-bar').style.width = `${focusScore}%`;
+        
+        // Generate efficiency tip
+        const tip = this.generateEfficiencyTip(bestTimeSlot, bestCategory, focusScore);
+        document.getElementById('efficiency-tip').textContent = tip;
+      },
+      
+      analyzeTimeSlots(tasks, completedHours) {
+        const timeSlots = {
+          '早晨 (6-9点)': { total: 0, completed: 0 },
+          '上午 (9-12点)': { total: 0, completed: 0 },
+          '下午 (12-17点)': { total: 0, completed: 0 },
+          '晚上 (17-21点)': { total: 0, completed: 0 },
+          '深夜 (21-24点)': { total: 0, completed: 0 }
+        };
+        
+        const schedule = TaskScheduler.scheduleTasks(tasks);
+        
+        Object.keys(schedule).forEach(date => {
+          schedule[date].forEach(task => {
+            const startTime = task.timeRange[0];
+            if (!startTime) return;
+            
+            const hour = parseInt(startTime.split(':')[0]);
+            let slot = '';
+            
+            if (hour >= 6 && hour < 9) slot = '早晨 (6-9点)';
+            else if (hour >= 9 && hour < 12) slot = '上午 (9-12点)';
+            else if (hour >= 12 && hour < 17) slot = '下午 (12-17点)';
+            else if (hour >= 17 && hour < 21) slot = '晚上 (17-21点)';
+            else slot = '深夜 (21-24点)';
+            
+            const taskId = `${date}-${task.name}`;
+            const taskHours = parseFloat(task.hours);
+            const completed = parseFloat(completedHours[taskId] || 0);
+            
+            timeSlots[slot].total += taskHours;
+            timeSlots[slot].completed += Math.min(completed, taskHours);
+          });
+        });
+        
+        let bestSlot = '分析中...';
+        let maxEfficiency = 0;
+        
+        Object.keys(timeSlots).forEach(slot => {
+          const data = timeSlots[slot];
+          if (data.total > 0) {
+            const efficiency = Math.round((data.completed / data.total) * 100);
+            if (efficiency > maxEfficiency) {
+              maxEfficiency = efficiency;
+              bestSlot = slot;
+            }
+          }
+        });
+        
+        return { bestSlot, efficiency: maxEfficiency };
+      },
+      
+      analyzeBestCategory(tasks, completedHours) {
+        const categoryStats = {};
+        const schedule = TaskScheduler.scheduleTasks(tasks);
+        
+        Object.keys(schedule).forEach(date => {
+          schedule[date].forEach(task => {
+            if (!categoryStats[task.category]) {
+              categoryStats[task.category] = { total: 0, completed: 0 };
+            }
+            
+            const taskId = `${date}-${task.name}`;
+            const taskHours = parseFloat(task.hours);
+            const completed = parseFloat(completedHours[taskId] || 0);
+            
+            categoryStats[task.category].total += taskHours;
+            categoryStats[task.category].completed += Math.min(completed, taskHours);
+          });
+        });
+        
+        let bestCategory = '分析中...';
+        let maxEfficiency = 0;
+        
+        Object.keys(categoryStats).forEach(category => {
+          const data = categoryStats[category];
+          if (data.total > 0) {
+            const efficiency = Math.round((data.completed / data.total) * 100);
+            if (efficiency > maxEfficiency) {
+              maxEfficiency = efficiency;
+              bestCategory = category;
+            }
+          }
+        });
+        
+        return { category: bestCategory, efficiency: maxEfficiency };
+      },
+      
+      calculateFocusScore(feedback) {
+        const dates = Object.keys(feedback);
+        if (dates.length === 0) return 0;
+        
+        let totalScore = 0;
+        let count = 0;
+        
+        dates.forEach(date => {
+          const entry = feedback[date];
+          if (entry.fatigue !== undefined) {
+            // Convert fatigue (0-10) to focus score (0-100)
+            // Lower fatigue = higher focus
+            const focusFromFatigue = (10 - parseInt(entry.fatigue)) * 10;
+            totalScore += focusFromFatigue;
+            count++;
+          }
+        });
+        
+        return count > 0 ? Math.round(totalScore / count) : 0;
+      },
+      
+      generateEfficiencyTip(bestTimeSlot, bestCategory, focusScore) {
+        const tips = [];
+        
+        if (bestTimeSlot !== '分析中...') {
+          tips.push(`在${bestTimeSlot}安排重要任务效率最高`);
+        }
+        
+        if (bestCategory !== '分析中...') {
+          tips.push(`${bestCategory}完成度最好，可以增加此类任务`);
+        }
+        
+        if (focusScore < 50) {
+          tips.push('注意休息，避免过度疲劳影响效率');
+        } else if (focusScore > 80) {
+          tips.push('专注度很好，保持当前节奏');
+        }
+        
+        if (tips.length === 0) {
+          return '完成更多任务以获得个性化分析建议';
+        }
+        
+        return tips.join('；');
+      },
+      
+      renderWeeklySummary(tasks, completedHours) {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+        
+        let weekTasksCompleted = 0;
+        let weekHoursSpent = 0;
+        let weekPlannedHours = 0;
+        
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(startOfWeek);
+          date.setDate(startOfWeek.getDate() + i);
+          const dateStr = date.toISOString().split('T')[0];
+          
+          const schedule = TaskScheduler.scheduleTasks(tasks);
+          const dayTasks = schedule[dateStr] || [];
+          
+          dayTasks.forEach(task => {
+            const taskId = `${dateStr}-${task.name}`;
+            const taskHours = parseFloat(task.hours);
+            const completed = parseFloat(completedHours[taskId] || 0);
+            
+            weekPlannedHours += taskHours;
+            weekHoursSpent += completed;
+            
+            if (completed >= taskHours * 0.8) { // 80% completion counts as completed
+              weekTasksCompleted++;
+            }
+          });
+        }
+        
+        const weekEfficiency = weekPlannedHours > 0 ? Math.round((weekHoursSpent / weekPlannedHours) * 100) : 0;
+        
+        document.getElementById('week-tasks-completed').textContent = weekTasksCompleted;
+        document.getElementById('week-hours-spent').textContent = `${weekHoursSpent.toFixed(1)}h`;
+        document.getElementById('week-efficiency').textContent = `${weekEfficiency}%`;
+        document.getElementById('week-progress-percent').textContent = `${weekEfficiency}%`;
+        document.getElementById('week-progress-bar').style.width = `${weekEfficiency}%`;
       }
+    };
+
+    // Firebase Configuration and Cloud Sync
+    const CloudSync = {
+      // Firebase config - you'll need to replace this with your actual config
+      firebaseConfig: {
+        apiKey: "demo-key-replace-with-your-firebase-config",
+        authDomain: "task-planner-demo.firebaseapp.com", 
+        projectId: "task-planner-demo",
+        storageBucket: "task-planner-demo.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdef123456"
+      },
+      
+      db: null,
+      auth: null,
+      user: null,
+      isInitialized: false,
+      
+      init() {
+        try {
+          // Initialize Firebase
+          if (!firebase.apps.length) {
+            firebase.initializeApp(this.firebaseConfig);
+          }
+          
+          this.auth = firebase.auth();
+          this.db = firebase.firestore();
+          this.isInitialized = true;
+          
+          // Setup auth state listener
+          this.auth.onAuthStateChanged((user) => {
+            this.handleAuthStateChange(user);
+          });
+          
+          console.log('Firebase initialized successfully');
+          this.updateSyncStatus('initialized', 'Firebase 已初始化');
+          
+        } catch (error) {
+          console.error('Firebase initialization failed:', error);
+          this.updateSyncStatus('error', 'Firebase 初始化失败');
+          // Show demo mode message
+          this.showDemoMode();
+        }
+      },
+      
+      showDemoMode() {
+        // Update UI to show demo mode
+        const syncText = document.getElementById('sync-text');
+        const syncIndicator = document.getElementById('sync-indicator');
+        const loginBtn = document.getElementById('login-btn');
+        
+        if (syncText) syncText.textContent = '演示模式';
+        if (syncIndicator) {
+          syncIndicator.className = 'w-3 h-3 rounded-full bg-warning';
+        }
+        if (loginBtn) {
+          loginBtn.innerHTML = '<i class="ri-information-line mr-2"></i>演示模式';
+          loginBtn.addEventListener('click', () => {
+            UI.showNotification('这是演示模式。要使用云同步功能，请配置 Firebase。', 'info');
+          });
+        }
+      },
+      
+      handleAuthStateChange(user) {
+        this.user = user;
+        
+        if (user) {
+          // User is signed in
+          this.showUserInterface(user);
+          this.setupCloudSync();
+          this.updateSyncStatus('synced', '云端已同步');
+          UI.showNotification(`欢迎回来，${user.displayName || user.email}！`, 'success');
+        } else {
+          // User is signed out
+          this.showLoginInterface();
+          this.updateSyncStatus('local', '本地模式');
+        }
+      },
+      
+      showUserInterface(user) {
+        document.getElementById('login-btn').classList.add('hidden');
+        document.getElementById('user-menu').classList.remove('hidden');
+        
+        // Update user info
+        const userName = user.displayName || user.email.split('@')[0];
+        const userEmail = user.email;
+        
+        document.getElementById('user-name').textContent = userName;
+        document.getElementById('user-email').textContent = userEmail;
+        
+        // Update avatar
+        const avatar = document.getElementById('user-avatar');
+        if (user.photoURL) {
+          avatar.innerHTML = `<img src="${user.photoURL}" class="w-6 h-6 rounded-full">`;
+        } else {
+          avatar.textContent = userName.charAt(0).toUpperCase();
+        }
+        
+        // Setup user menu events
+        this.setupUserMenuEvents();
+      },
+      
+      showLoginInterface() {
+        document.getElementById('login-btn').classList.remove('hidden');
+        document.getElementById('user-menu').classList.add('hidden');
+      },
+      
+      setupUserMenuEvents() {
+        const userMenuBtn = document.getElementById('user-menu-btn');
+        const userDropdown = document.getElementById('user-dropdown');
+        
+        userMenuBtn.addEventListener('click', () => {
+          userDropdown.classList.toggle('hidden');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+            userDropdown.classList.add('hidden');
+          }
+        });
+        
+        // Setup menu item events
+        document.getElementById('force-sync').addEventListener('click', () => {
+          this.forceSyncFromCloud();
+          userDropdown.classList.add('hidden');
+        });
+        
+        document.getElementById('import-local').addEventListener('click', () => {
+          this.importLocalDataToCloud();
+          userDropdown.classList.add('hidden');
+        });
+        
+        document.getElementById('logout-btn').addEventListener('click', () => {
+          this.signOut();
+          userDropdown.classList.add('hidden');
+        });
+      },
+      
+      updateSyncStatus(status, text) {
+        const syncStatus = document.getElementById('sync-status');
+        const syncIndicator = document.getElementById('sync-indicator');
+        const syncText = document.getElementById('sync-text');
+        
+        if (!syncStatus) return;
+        
+        syncStatus.classList.remove('hidden');
+        
+        // Update indicator color
+        syncIndicator.className = 'w-3 h-3 rounded-full';
+        switch (status) {
+          case 'synced':
+            syncIndicator.classList.add('bg-success');
+            break;
+          case 'syncing':
+            syncIndicator.classList.add('bg-warning');
+            break;
+          case 'error':
+            syncIndicator.classList.add('bg-danger');
+            break;
+          case 'local':
+            syncIndicator.classList.add('bg-gray-400');
+            break;
+          default:
+            syncIndicator.classList.add('bg-gray-400');
+        }
+        
+        syncText.textContent = text;
+      },
+      
+      // Authentication methods
+      async signInWithGoogle() {
+        try {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.addScope('profile');
+          provider.addScope('email');
+          
+          const result = await this.auth.signInWithPopup(provider);
+          return result.user;
+        } catch (error) {
+          console.error('Google sign in error:', error);
+          throw error;
+        }
+      },
+      
+      async signInWithGitHub() {
+        try {
+          const provider = new firebase.auth.GithubAuthProvider();
+          provider.addScope('user:email');
+          
+          const result = await this.auth.signInWithPopup(provider);
+          return result.user;
+        } catch (error) {
+          console.error('GitHub sign in error:', error);
+          throw error;
+        }
+      },
+      
+      async signInWithEmail(email, password) {
+        try {
+          const result = await this.auth.signInWithEmailAndPassword(email, password);
+          return result.user;
+        } catch (error) {
+          console.error('Email sign in error:', error);
+          throw error;
+        }
+      },
+      
+      async createUserWithEmail(email, password) {
+        try {
+          const result = await this.auth.createUserWithEmailAndPassword(email, password);
+          return result.user;
+        } catch (error) {
+          console.error('Email registration error:', error);
+          throw error;
+        }
+      },
+      
+      async signOut() {
+        try {
+          await this.auth.signOut();
+          UI.showNotification('已退出登录', 'success');
+        } catch (error) {
+          console.error('Sign out error:', error);
+          UI.showNotification('退出登录失败', 'error');
+        }
+      },
+      
+      // Cloud sync methods
+      setupCloudSync() {
+        if (!this.user) return;
+        
+        // Setup real-time listeners for data changes
+        this.setupTasksListener();
+        this.setupCompletedHoursListener();
+        this.setupFeedbackListener();
+      },
+      
+      setupTasksListener() {
+        const tasksRef = this.db.collection('users').doc(this.user.uid).collection('tasks');
+        
+        tasksRef.onSnapshot((snapshot) => {
+          if (snapshot.metadata.hasPendingWrites) return; // Skip local writes
+          
+          const cloudTasks = [];
+          snapshot.forEach((doc) => {
+            cloudTasks.push({ id: doc.id, ...doc.data() });
+          });
+          
+          // Update local storage with cloud data
+          this.mergeCloudTasks(cloudTasks);
+        }, (error) => {
+          console.error('Tasks listener error:', error);
+          this.updateSyncStatus('error', '同步错误');
+        });
+      },
+      
+      setupCompletedHoursListener() {
+        const hoursRef = this.db.collection('users').doc(this.user.uid).collection('completedHours');
+        
+        hoursRef.onSnapshot((snapshot) => {
+          if (snapshot.metadata.hasPendingWrites) return;
+          
+          const cloudHours = {};
+          snapshot.forEach((doc) => {
+            cloudHours[doc.id] = doc.data().hours;
+          });
+          
+          this.mergeCloudCompletedHours(cloudHours);
+        }, (error) => {
+          console.error('Completed hours listener error:', error);
+        });
+      },
+      
+      setupFeedbackListener() {
+        const feedbackRef = this.db.collection('users').doc(this.user.uid).collection('feedback');
+        
+        feedbackRef.onSnapshot((snapshot) => {
+          if (snapshot.metadata.hasPendingWrites) return;
+          
+          const cloudFeedback = {};
+          snapshot.forEach((doc) => {
+            cloudFeedback[doc.id] = doc.data();
+          });
+          
+          this.mergeCloudFeedback(cloudFeedback);
+        }, (error) => {
+          console.error('Feedback listener error:', error);
+        });
+      },
+      
+      // Data merging methods
+      mergeCloudTasks(cloudTasks) {
+        try {
+          const localTasks = DataStore.getTasks();
+          const merged = this.mergeTaskArrays(localTasks, cloudTasks);
+          
+          localStorage.setItem('tasks', JSON.stringify(merged));
+          UI.renderAll();
+          this.updateSyncStatus('synced', '任务已同步');
+        } catch (error) {
+          console.error('Error merging cloud tasks:', error);
+        }
+      },
+      
+      mergeCloudCompletedHours(cloudHours) {
+        try {
+          const localHours = DataStore.getCompletedHours();
+          const merged = { ...localHours, ...cloudHours };
+          
+          localStorage.setItem('completedHours', JSON.stringify(merged));
+          UI.renderAll();
+        } catch (error) {
+          console.error('Error merging cloud hours:', error);
+        }
+      },
+      
+      mergeCloudFeedback(cloudFeedback) {
+        try {
+          const localFeedback = DataStore.getFeedback();
+          const merged = { ...localFeedback, ...cloudFeedback };
+          
+          localStorage.setItem('dailyFeedback', JSON.stringify(merged));
+          UI.renderAll();
+        } catch (error) {
+          console.error('Error merging cloud feedback:', error);
+        }
+      },
+      
+      mergeTaskArrays(localTasks, cloudTasks) {
+        const taskMap = new Map();
+        
+        // Add local tasks first
+        localTasks.forEach(task => {
+          taskMap.set(task.name, { ...task, source: 'local' });
+        });
+        
+        // Merge cloud tasks (cloud takes precedence for conflicts)
+        cloudTasks.forEach(cloudTask => {
+          const existing = taskMap.get(cloudTask.name);
+          if (!existing || new Date(cloudTask.lastModified || 0) > new Date(existing.lastModified || 0)) {
+            taskMap.set(cloudTask.name, { ...cloudTask, source: 'cloud' });
+          }
+        });
+        
+        return Array.from(taskMap.values());
+      },
+      
+      // Cloud operations
+      async syncTaskToCloud(task) {
+        if (!this.user) return;
+        
+        try {
+          const taskData = {
+            ...task,
+            lastModified: firebase.firestore.FieldValue.serverTimestamp(),
+            userId: this.user.uid
+          };
+          
+          await this.db.collection('users').doc(this.user.uid)
+            .collection('tasks').doc(task.name).set(taskData);
+            
+          this.updateSyncStatus('synced', '任务已同步到云端');
+        } catch (error) {
+          console.error('Error syncing task to cloud:', error);
+          this.updateSyncStatus('error', '同步失败');
+        }
+      },
+      
+      async syncCompletedHourToCloud(taskId, hours) {
+        if (!this.user) return;
+        
+        try {
+          await this.db.collection('users').doc(this.user.uid)
+            .collection('completedHours').doc(taskId).set({
+              hours: hours,
+              lastModified: firebase.firestore.FieldValue.serverTimestamp(),
+              userId: this.user.uid
+            });
+        } catch (error) {
+          console.error('Error syncing completed hour to cloud:', error);
+        }
+      },
+      
+      async syncFeedbackToCloud(date, feedback) {
+        if (!this.user) return;
+        
+        try {
+          await this.db.collection('users').doc(this.user.uid)
+            .collection('feedback').doc(date).set({
+              ...feedback,
+              lastModified: firebase.firestore.FieldValue.serverTimestamp(),
+              userId: this.user.uid
+            });
+        } catch (error) {
+          console.error('Error syncing feedback to cloud:', error);
+        }
+      },
+      
+      async deleteTaskFromCloud(taskName) {
+        if (!this.user) return;
+        
+        try {
+          await this.db.collection('users').doc(this.user.uid)
+            .collection('tasks').doc(taskName).delete();
+        } catch (error) {
+          console.error('Error deleting task from cloud:', error);
+        }
+      },
+      
+      // Force sync operations
+      async forceSyncFromCloud() {
+        if (!this.user) return;
+        
+        try {
+          this.updateSyncStatus('syncing', '正在从云端同步...');
+          
+          // Get all cloud data
+          const tasksSnapshot = await this.db.collection('users').doc(this.user.uid).collection('tasks').get();
+          const hoursSnapshot = await this.db.collection('users').doc(this.user.uid).collection('completedHours').get();
+          const feedbackSnapshot = await this.db.collection('users').doc(this.user.uid).collection('feedback').get();
+          
+          // Process tasks
+          const cloudTasks = [];
+          tasksSnapshot.forEach(doc => {
+            cloudTasks.push({ id: doc.id, ...doc.data() });
+          });
+          this.mergeCloudTasks(cloudTasks);
+          
+          // Process completed hours
+          const cloudHours = {};
+          hoursSnapshot.forEach(doc => {
+            cloudHours[doc.id] = doc.data().hours;
+          });
+          this.mergeCloudCompletedHours(cloudHours);
+          
+          // Process feedback
+          const cloudFeedback = {};
+          feedbackSnapshot.forEach(doc => {
+            cloudFeedback[doc.id] = doc.data();
+          });
+          this.mergeCloudFeedback(cloudFeedback);
+          
+          this.updateSyncStatus('synced', '从云端同步完成');
+          UI.showNotification('从云端同步完成', 'success');
+          
+        } catch (error) {
+          console.error('Force sync from cloud error:', error);
+          this.updateSyncStatus('error', '同步失败');
+          UI.showNotification('从云端同步失败', 'error');
+        }
+      },
+      
+      async importLocalDataToCloud() {
+        if (!this.user) return;
+        
+        try {
+          this.updateSyncStatus('syncing', '正在导入本地数据...');
+          
+          const localTasks = DataStore.getTasks();
+          const localHours = DataStore.getCompletedHours();
+          const localFeedback = DataStore.getFeedback();
+          
+          // Upload tasks
+          const batch = this.db.batch();
+          const userRef = this.db.collection('users').doc(this.user.uid);
+          
+          localTasks.forEach(task => {
+            const taskRef = userRef.collection('tasks').doc(task.name);
+            batch.set(taskRef, {
+              ...task,
+              lastModified: firebase.firestore.FieldValue.serverTimestamp(),
+              userId: this.user.uid
+            });
+          });
+          
+          // Upload completed hours
+          Object.keys(localHours).forEach(taskId => {
+            const hourRef = userRef.collection('completedHours').doc(taskId);
+            batch.set(hourRef, {
+              hours: localHours[taskId],
+              lastModified: firebase.firestore.FieldValue.serverTimestamp(),
+              userId: this.user.uid
+            });
+          });
+          
+          // Upload feedback
+          Object.keys(localFeedback).forEach(date => {
+            const feedbackRef = userRef.collection('feedback').doc(date);
+            batch.set(feedbackRef, {
+              ...localFeedback[date],
+              lastModified: firebase.firestore.FieldValue.serverTimestamp(),
+              userId: this.user.uid
+            });
+          });
+          
+          await batch.commit();
+          
+          this.updateSyncStatus('synced', '本地数据已导入云端');
+          UI.showNotification('本地数据已成功导入云端', 'success');
+          
+        } catch (error) {
+          console.error('Import local data error:', error);
+          this.updateSyncStatus('error', '导入失败');
+          UI.showNotification('导入本地数据失败', 'error');
+        }
+      }
+    };
+
+    // Enhanced DataStore with cloud sync
+    const EnhancedDataStore = {
+      ...DataStore,
+      
+      async saveTask(task) {
+        // Save locally first
+        const success = DataStore.saveTask(task);
+        
+        if (success && CloudSync.user) {
+          // Sync to cloud
+          await CloudSync.syncTaskToCloud(task);
+        }
+        
+        return success;
+      },
+      
+      async deleteTask(taskName) {
+        // Delete locally first
+        const success = DataStore.deleteTask(taskName);
+        
+        if (success && CloudSync.user) {
+          // Delete from cloud
+          await CloudSync.deleteTaskFromCloud(taskName);
+        }
+        
+        return success;
+      },
+      
+      async updateTaskProgress(taskId, hours) {
+        // Update locally first
+        const success = DataStore.updateTaskProgress(taskId, hours);
+        
+        if (success && CloudSync.user) {
+          // Sync to cloud
+          await CloudSync.syncCompletedHourToCloud(taskId, hours);
+        }
+        
+        return success;
+      },
+      
+      async saveFeedback(date, data) {
+        // Save locally first
+        const success = DataStore.saveFeedback(date, data);
+        
+        if (success && CloudSync.user) {
+          // Sync to cloud
+          await CloudSync.syncFeedbackToCloud(date, data);
+        }
+        
+        return success;
+      }
+    };
+
+    // Replace DataStore references in UI with EnhancedDataStore
+    // Update UI to use enhanced data store
+    const originalInit = UI.init;
+    UI.init = function() {
+      // Setup auth event listeners first
+      this.setupAuthEventListeners();
+      
+      // Initialize Firebase
+      CloudSync.init();
+      
+      // Call original init
+      originalInit.call(this);
+    };
+
+    UI.setupAuthEventListeners = function() {
+      // Login button
+      document.getElementById('login-btn').addEventListener('click', () => {
+        this.openLoginModal();
+      });
+      
+      // Login modal events
+      document.getElementById('login-modal-close').addEventListener('click', () => {
+        this.closeLoginModal();
+      });
+      
+      // Auth method buttons
+      document.getElementById('google-login').addEventListener('click', () => {
+        this.signInWithGoogle();
+      });
+      
+      document.getElementById('github-login').addEventListener('click', () => {
+        this.signInWithGitHub();
+      });
+      
+      document.getElementById('email-login').addEventListener('click', () => {
+        this.signInWithEmail();
+      });
+      
+      document.getElementById('email-register').addEventListener('click', () => {
+        this.registerWithEmail();
+      });
+    };
+
+    UI.openLoginModal = function() {
+      document.getElementById('login-modal').classList.remove('hidden');
+    };
+
+    UI.closeLoginModal = function() {
+      document.getElementById('login-modal').classList.add('hidden');
+    };
+
+    UI.signInWithGoogle = async function() {
+      try {
+        await CloudSync.signInWithGoogle();
+        this.closeLoginModal();
+      } catch (error) {
+        console.error('Google login error:', error);
+        this.showNotification('Google 登录失败：' + error.message, 'error');
+      }
+    };
+
+    UI.signInWithGitHub = async function() {
+      try {
+        await CloudSync.signInWithGitHub();
+        this.closeLoginModal();
+      } catch (error) {
+        console.error('GitHub login error:', error);
+        this.showNotification('GitHub 登录失败：' + error.message, 'error');
+      }
+    };
+
+    UI.signInWithEmail = async function() {
+      const email = document.getElementById('email-input').value.trim();
+      const password = document.getElementById('password-input').value;
+      
+      if (!email || !password) {
+        this.showNotification('请输入邮箱和密码', 'error');
+        return;
+      }
+      
+      try {
+        await CloudSync.signInWithEmail(email, password);
+        this.closeLoginModal();
+      } catch (error) {
+        console.error('Email login error:', error);
+        this.showNotification('邮箱登录失败：' + error.message, 'error');
+      }
+    };
+
+    UI.registerWithEmail = async function() {
+      const email = document.getElementById('email-input').value.trim();
+      const password = document.getElementById('password-input').value;
+      
+      if (!email || !password) {
+        this.showNotification('请输入邮箱和密码', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        this.showNotification('密码长度至少6位', 'error');
+        return;
+      }
+      
+      try {
+        await CloudSync.createUserWithEmail(email, password);
+        this.closeLoginModal();
+        this.showNotification('注册成功！', 'success');
+      } catch (error) {
+        console.error('Email registration error:', error);
+        this.showNotification('注册失败：' + error.message, 'error');
+      }
+    };
+
+    // Override DataStore methods in UI to use EnhancedDataStore
+    const originalSaveTask = UI.saveTask;
+    UI.saveTask = async function() {
+      // Get form data
+      const name = document.getElementById('task-name').value.trim();
+      const start = document.getElementById('task-start').value;
+      const end = document.getElementById('task-end').value;
+      const hours = parseFloat(document.getElementById('task-hours').value);
+      const startTime = document.getElementById('task-start-time').value;
+      const endTime = document.getElementById('task-end-time').value;
+      const category = document.getElementById('task-category').value;
+      const priority = document.getElementById('task-priority').value;
+      
+      if (!name) {
+        this.showNotification('请输入任务名称', 'error');
+        return;
+      }
+      
+      if (!start || !end) {
+        this.showNotification('请选择开始和结束日期', 'error');
+        return;
+      }
+      
+      if (new Date(start) > new Date(end)) {
+        this.showNotification('结束日期不能早于开始日期', 'error');
+        return;
+      }
+      
+      if (!hours || hours <= 0) {
+        this.showNotification('请输入有效的小时数', 'error');
+        return;
+      }
+      
+      // Create task object
+      const task = {
+        name,
+        start,
+        end,
+        estimatedHours: hours,
+        timeRange: [startTime, endTime],
+        category,
+        priority
+      };
+      
+      // If in edit mode, preserve the original name
+      if (this.editingTask) {
+        task.name = this.editingTask.name;
+      } else {
+        // Check for duplicate names
+        const tasks = DataStore.getTasks();
+        if (tasks.some(t => t.name === name)) {
+          this.showNotification('已存在同名任务，请更改名称', 'error');
+          return;
+        }
+      }
+      
+      // Save task using enhanced data store
+      if (await EnhancedDataStore.saveTask(task)) {
+        this.closeTaskModal();
+        this.renderAll();
+        this.showNotification(this.editingTask ? '任务已更新' : '任务已添加', 'success');
+      }
+    };
+
+    // Override other DataStore methods
+    const originalUpdateTaskProgress = UI.renderCheckin;
+    UI.renderCheckin = function() {
+      const tasks = DataStore.getTasks();
+      const completedHours = DataStore.getCompletedHours();
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get today's tasks
+      const todayTasks = TaskScheduler.getTodayTasks(tasks);
+      const tasksContainer = document.getElementById('checkin-tasks');
+      
+      if (todayTasks.length > 0) {
+        tasksContainer.innerHTML = '';
+        
+        todayTasks.forEach(task => {
+          const taskId = `${today}-${task.name}`;
+          const done = parseFloat(completedHours[taskId] || 0);
+          const total = parseFloat(task.hours);
+          const percent = Math.min(100, Math.round((done / total) * 100));
+          
+          let priorityColor = 'text-gray-500';
+          if (task.priority === '高') priorityColor = 'text-danger';
+          else if (task.priority === '中') priorityColor = 'text-warning';
+          else if (task.priority === '低') priorityColor = 'text-success';
+          
+          const taskEl = document.createElement('div');
+          taskEl.className = 'bg-gray-50 dark:bg-gray-700 rounded-lg p-4';
+          
+          taskEl.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <div class="flex items-center">
+                  <span class="${priorityColor} mr-2">
+                    ${task.priority === '高' ? '🔥' : task.priority === '中' ? '⚡' : '🌱'}
+                  </span>
+                  <span class="font-medium">${task.name}</span>
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  ${task.timeRange[0]}~${task.timeRange[1]} · ${task.category}
+                </div>
+              </div>
+              <div class="text-sm">
+                <span class="font-medium">${done}</span>/<span>${total}</span> 小时
+              </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+              <div class="flex-1">
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div class="bg-primary h-2 rounded-full" style="width: ${percent}%"></div>
+                </div>
+              </div>
+              <input type="number" 
+                class="w-16 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg py-1 px-2 text-center text-base" 
+                min="0" max="${total}" step="0.1" value="${done}"
+                data-task-id="${taskId}" data-max="${total}">
+            </div>
+          `;
+          
+          // Add event listener for progress input with cloud sync
+          const input = taskEl.querySelector('input');
+          input.addEventListener('change', async (e) => {
+            const taskId = e.target.getAttribute('data-task-id');
+            const max = parseFloat(e.target.getAttribute('data-max'));
+            let value = parseFloat(e.target.value);
+            
+            // Clamp value
+            value = Math.max(0, Math.min(value, max));
+            e.target.value = value;
+            
+            // Update storage with cloud sync
+            await EnhancedDataStore.updateTaskProgress(taskId, value);
+            this.renderCheckin();
+            this.renderDashboard();
+          });
+          
+          tasksContainer.appendChild(taskEl);
+        });
+      } else {
+        tasksContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">今天没有安排任务</p>';
+      }
+      
+      // Check if there's saved feedback for today
+      const feedback = DataStore.getFeedback();
+      if (feedback[today]) {
+        document.getElementById('fatigue').value = feedback[today].fatigue;
+        document.getElementById('fatigue-value').textContent = feedback[today].fatigue;
+        document.getElementById('mood').value = feedback[today].mood;
+        document.getElementById('notes').value = feedback[today].notes;
+        
+        document.getElementById('feedback-status').textContent = '今日反馈已保存';
+        document.getElementById('feedback-status').classList.remove('hidden');
+      } else {
+        document.getElementById('feedback-status').classList.add('hidden');
+      }
+    };
+
+    // Override saveFeedback to use cloud sync
+    const originalSaveFeedback = UI.saveFeedback;
+    UI.saveFeedback = async function() {
+      const today = new Date().toISOString().split('T')[0];
+      const data = {
+        fatigue: document.getElementById('fatigue').value,
+        mood: document.getElementById('mood').value,
+        notes: document.getElementById('notes').value,
+        timestamp: new Date().toISOString()
+      };
+      
+      await EnhancedDataStore.saveFeedback(today, data);
+      
+      document.getElementById('feedback-status').textContent = '反馈已保存';
+      document.getElementById('feedback-status').classList.remove('hidden');
+      
+      // Hide status after 3 seconds
+      setTimeout(() => {
+        document.getElementById('feedback-status').classList.add('hidden');
+      }, 3000);
     };
 
     // Initialize the app
